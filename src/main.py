@@ -1,53 +1,45 @@
 from chaos import *
-from util import *
 from aes import *
+from util import *
+from aes_chaos import *
+from tcp import *
 
 import argparse
 
 chaos = HenonMap(1.00, 2.00, 3.00)
 iv = b'abcdefghijklmnop'
-
-def encrypt(file_path: str, output_path: str, auth = True):
-  if auth:
-    daes = DynamicAESWithHMAC(chaos, iv=iv, rotate_size=128)
-  else:
-    daes = DynamicAES(chaos, iv=iv, rotate_size=128)
-
-  with open(file_path, 'rb') as f:
-    result = daes.encrypt(f.read())
-
-  with open(output_path, 'wb') as f:
-    f.write(result)
-
-def decrypt(file_path: str, output_path: str, auth = True):
-  if auth:
-    daes = DynamicAESWithHMAC(chaos, iv=iv, rotate_size=128)
-  else:
-    daes = DynamicAES(chaos, iv=iv, rotate_size=128)
-  
-  with open(file_path, 'rb') as f:
-    result = daes.decrypt(f.read())
-
-  with open(output_path, 'wb') as f:
-    f.write(result)
+system = AESChaos(chaos, iv, True)
 
 parser = argparse.ArgumentParser(
-              prog='main.py',
-              description='This is the dynamic encryptor')
-parser.add_argument('--mode' , '-m', help="Application mode (encrypt or decrypt)")
-parser.add_argument('filename', help="Input filename")
-parser.add_argument('--output' ,'-o', help="Output filename")
-parser.add_argument('--no-auth' ,'-a', help="Without Auth", action=argparse.BooleanOptionalAction, type=bool, default=False)
+    prog='main.py',
+    description='This is chatbot application using Dynamic Encryption')
+parser.add_argument(
+    '--mode', '-m', help="Application mode (client or server)", required=True)
+parser.add_argument(
+    '--address', '-a', help="Bind Address (Server) or Target Address (Client)", required=True)
+parser.add_argument(
+    '--port', '-p', help="Port to bind or connect", required=True)
 
 args = vars(parser.parse_args())
 print(args)
-fname = args['filename']
-oname = args['output']
-noauth = args['no_auth']
+mode = args['mode']
+address = args['address']
+port = args['port']
 
-if args['mode'] == 'encrypt':
-  encrypt(fname, oname, auth= not noauth)
-elif args['mode'] == 'decrypt':
-  decrypt(fname, oname, auth= not noauth)
+
+def data(data: bytes) -> bytes:
+    data = system.decrypt(data)
+    print(f"Received: {data}")
+
+    return system.encrypt(b"from server: " + data)
+
+
+if mode == 'server':
+    tcp = TCPServer(address, int(port), data)
+    tcp.start()
 else:
-  raise Exception("Unknown type :(")
+    while True:
+        message = input("> ")
+        client = TCPClient(address, int(port))
+        data = client.send(system.encrypt(message.encode()))
+        print(f"Received: {system.decrypt(data)}")
