@@ -1,6 +1,6 @@
-from chaos import *
-from aes import *
-from util import *
+from lib.enc.chaos import *
+from lib.enc.aes import *
+from lib.util import *
 
 
 class AESChaos:

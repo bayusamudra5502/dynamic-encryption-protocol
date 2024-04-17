@@ -1,12 +1,12 @@
-from chaos import *
-from aes import *
-from util import *
-from aes_chaos import *
-from tcp import *
+from lib.enc.chaos import *
+from lib.enc.aes import *
+from lib.util import *
+from lib.enc.aes_chaos import *
+from lib.conn.tcp import *
 
 import argparse
 
-chaos = HenonMap(1.00, 2.00, 3.00)
+chaos = HenonMap(0.67, 0.12, 0.86)
 iv = b'abcdefghijklmnop'
 system = AESChaos(chaos, iv, True)
 
