@@ -12,7 +12,7 @@ class AESChaos:
                 self.__chaos, iv=self.__iv, rotate_size=128)
         else:
             self.__daes = DynamicAES(
-                self.__chaos, iv=self.__iv, rotate_size=128)
+                self.__chaos, iv=self.__iv, block_size=128)
 
     def encrypt(self, data: bytes):
         result = self.__daes.encrypt(data)
