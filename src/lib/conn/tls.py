@@ -1,6 +1,7 @@
 from lib.conn.transport import Transport
 from lib.conn.tlsrecord import TLSRecordHandler
 from lib.exception.CipherException import CipherException
+from lib.enc.aes import MAC_SIZE
 
 
 class ConnectionState:
@@ -9,7 +10,6 @@ class ConnectionState:
 
 
 TLS_DEBUG = False
-MAC_SIZE = 32
 
 
 class TLSConnection:

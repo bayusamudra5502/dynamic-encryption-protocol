@@ -1,7 +1,6 @@
-from lib.enc.chaos import *
+from lib.enc.csprng import *
 from lib.enc.aes import *
 from lib.util import *
-from lib.enc.aes_chaos import *
 from lib.conn.tcp import *
 from lib.conn.tls import *
 from lib.conn.tlsrecord import *
@@ -9,12 +8,12 @@ from lib.conn.tlsrecord import *
 import argparse
 
 # Server Chaos
-c1 = HenonMap(0.67, 0.12, 0.86)
-c2 = HenonMap(0.11, 0.17, 0.91)
+c1 = SineHenonMap(0.67, 0.12)
+c2 = SineHenonMap(0.11, 0.17)
 
 # Client Chaos
-c3 = HenonMap(0.19, 0.23, 0.97)
-c4 = HenonMap(0.29, 0.31, 0.37)
+c3 = SineHenonMap(0.19, 0.23)
+c4 = SineHenonMap(0.29, 0.31)
 
 parser = argparse.ArgumentParser(
     prog='main.py',
@@ -53,7 +52,8 @@ def server(listen_addr: str, port: int):
     def handler(transport: Transport, conn: socket.socket, addr: tuple):
         print(f"Connection from {addr}")
         conn = TLSConnection(transport, tls_handler=TLSRecordHandler(
-            ProtocolVersion(2, 0), c1, c3, c2, c4
+            ProtocolVersion(3, 3), DynamicAES(c1), DynamicAES(
+                c3), DynamicHMAC(c2), DynamicHMAC(c4)
         ))
 
         while True:
@@ -71,7 +71,8 @@ def server(listen_addr: str, port: int):
 def client(target_addr: str, port: int):
     transport = TCPClient(target_addr, port)
     conn = TLSConnection(transport, tls_handler=TLSRecordHandler(
-        ProtocolVersion(2, 0), c3, c1, c4, c2
+        ProtocolVersion(3, 3), DynamicAES(c3), DynamicAES(
+            c1), DynamicHMAC(c4), DynamicHMAC(c2)
     ))
 
     while True:

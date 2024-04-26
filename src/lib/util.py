@@ -2,7 +2,7 @@ import numpy as np
 
 
 def to_linear(x):
-    res = np.asarray(((np.array(x) / 4.0 + 0.5) * 256), dtype=np.uint8)
+    res = np.asarray(((np.array(x)) * 256), dtype=np.uint8)
     return res
 
 

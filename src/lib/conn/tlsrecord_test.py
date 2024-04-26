@@ -1,6 +1,7 @@
 from lib.conn.tlsrecord import *
 from lib.enc.aes import *
 from random import SystemRandom
+from lib.enc.csprng import *
 
 
 def test_tlsrecord():
@@ -12,9 +13,21 @@ def test_tlsrecord():
     seqnum = random_start()
 
     alice = TLSRecordHandler(ProtocolVersion(
-        4, 0), h1, h2, m1, m2, sequence_number=seqnum)
-    bob = TLSRecordHandler(ProtocolVersion(4, 0), h2, h1,
-                           m2, m1, sequence_number=seqnum)
+        4, 0),
+        DynamicAES(h1, block_size=16),
+        DynamicAES(h2, block_size=16),
+        DynamicHMAC(m1),
+        DynamicHMAC(m2),
+        sequence_number=seqnum
+    )
+    bob = TLSRecordHandler(
+        ProtocolVersion(4, 0),
+        DynamicAES(h2),
+        DynamicAES(h1),
+        DynamicHMAC(m2),
+        DynamicHMAC(m1),
+        sequence_number=seqnum
+    )
 
     # From Alice to Bob
     result = alice.pack(b"Hello, Bob!")
@@ -81,8 +94,8 @@ def test_tlsrecord():
 
 def random_henon():
     cryptogen = SystemRandom()
-    mac_map = HenonMap(cryptogen.random(),
-                       cryptogen.random(), cryptogen.random())
+    mac_map = SineHenonMap(cryptogen.random(),
+                           cryptogen.random())
 
     return mac_map
 

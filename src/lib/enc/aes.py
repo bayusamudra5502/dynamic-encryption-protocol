@@ -1,25 +1,48 @@
 from Crypto.Cipher import AES
 from Crypto.Hash import HMAC, SHA256
 from lib.util import *
-from lib.enc.chaos import HenonMap
+from lib.enc.csprng import CSPRNG
 from Crypto.Util.Padding import pad, unpad
 from lib.exception.CipherException import CipherException
+from abc import ABC, abstractmethod
+
+MAC_SIZE = 32
+
+
+class Cipher(ABC):
+    @abstractmethod
+    def encrypt(self, data: bytes) -> bytes:
+        pass
+
+    @abstractmethod
+    def decrypt(self, data: bytes) -> bytes:
+        pass
+
+
+class MAC(ABC):
+    @abstractmethod
+    def generate(self, data: bytes) -> bytes:
+        pass
+
+    @abstractmethod
+    def verify(self, data: bytes, mac: bytes) -> bool:
+        pass
 
 
 class DynamicState:
-    __next_chaos: HenonMap
+    __next_chaos: CSPRNG
     __current_key: bytes
 
     def __init__(self, chaos=None) -> None:
         if not chaos is None:
             self.__current_key, self.__next_chaos = self.__calculate_key(chaos)
 
-    def __calculate_key(self, chaos: HenonMap) -> tuple[bytes, HenonMap]:
+    def __calculate_key(self, chaos: CSPRNG) -> tuple[bytes, CSPRNG]:
         keys = bytearray()
         new_chaos = chaos.copy()
 
         for _ in range(32):
-            result = to_linear(new_chaos.get_tuple()[0])
+            result = to_linear(new_chaos.get_value())
             keys.extend(result.tobytes())
             new_chaos = new_chaos.next()
 
@@ -40,7 +63,7 @@ class DynamicState:
         return result
 
 
-class DynamicAES(DynamicState):
+class DynamicAES(DynamicState, Cipher):
     __block_size: bytes
 
     def __init__(self) -> None:
@@ -90,7 +113,7 @@ class DynamicAES(DynamicState):
         return unpad(bytes(plaintext), 16)
 
 
-class DynamicHMAC(DynamicState):
+class DynamicHMAC(DynamicState, MAC):
     def __init__(self, chaos) -> None:
         super().__init__(chaos)
 

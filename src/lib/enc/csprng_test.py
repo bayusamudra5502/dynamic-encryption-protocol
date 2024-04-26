@@ -1,9 +1,9 @@
-from lib.enc.chaos import HenonMap
+from lib.enc.csprng import *
 from random import random
 
 
 def test_chaos():
-    x = HenonMap(random(), random(), random())
+    x = SineHenonMap(random(), random())
 
     assert x == x
 
