@@ -29,6 +29,9 @@ class TLSCiphertext(TLSPayload):
     def length(self) -> int:
         return len(self.__data) + len(self.__mac)
 
+    def __len__(self) -> int:
+        return self.length()
+
     def mac_length(self) -> int:
         return len(self.__mac)
 
