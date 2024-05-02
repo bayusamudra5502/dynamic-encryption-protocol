@@ -5,7 +5,7 @@ from lib.enc.aes import *
 MODULO_SIZE = 2**64
 
 
-class TLSRecordHandler:
+class TLSApplicationRecordHandler:
     __version: ProtocolVersion = None
     __write_server_aes: Cipher = None
     __write_client_aes: Cipher = None
@@ -29,11 +29,11 @@ class TLSRecordHandler:
         self.__write_client_mac = write_mac
         self.__sequence_number = sequence_number % MODULO_SIZE
 
-    def parse(self, data: bytes) -> TLSRecordLayer:
-        return TLSRecordLayer.parse(data)
+    def parse(self, data: bytes, *, with_data=True) -> TLSRecordLayer:
+        return TLSRecordLayer.parse(data, with_data=with_data)
 
     def unpack(self, record: TLSRecordLayer) -> bytes:
-        data = record.get_content()
+        data = record.get_content().get_data()
 
         sequence_number = self.__sequence_number
 
@@ -43,7 +43,8 @@ class TLSRecordHandler:
             struct.pack(">H", len(data)) +\
             data
 
-        self.__write_server_mac.verify(mac_data, record.get_mac())
+        self.__write_server_mac.verify(
+            mac_data, record.get_content().get_mac())
         self.__sequence_number = (sequence_number + 1) % MODULO_SIZE
 
         dec_data = self.__write_server_aes.decrypt(data)
@@ -53,12 +54,10 @@ class TLSRecordHandler:
         enc_data = self.__write_client_aes.encrypt(data)
         sequence_number = self.__sequence_number
 
+        payload = struct.pack(">Q", sequence_number) + ContentType.APPLICATION_DATA + \
+            self.__version.encode() + struct.pack(">H", len(enc_data)) + enc_data
         mac = self.__write_client_mac.generate(
-            struct.pack(">Q", sequence_number) +
-            ContentType.APPLICATION_DATA +
-            self.__version.encode() +
-            struct.pack(">H", len(enc_data)) +
-            enc_data
+            payload
         )
 
         self.__sequence_number = (sequence_number + 1) % MODULO_SIZE
@@ -66,6 +65,5 @@ class TLSRecordHandler:
         return TLSRecordLayer(
             version=self.__version,
             content_type=ContentType.APPLICATION_DATA,
-            content=enc_data,
-            mac=mac
+            data=TLSCiphertext(enc_data, mac)
         )

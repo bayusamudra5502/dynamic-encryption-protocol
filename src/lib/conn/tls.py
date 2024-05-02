@@ -1,7 +1,8 @@
 from lib.conn.transport import Transport
-from lib.conn.tlsrecord import TLSRecordHandler
+from lib.conn.tlsrecord import TLSApplicationRecordHandler
 from lib.exception.CipherException import CipherException
 from lib.enc.aes import MAC_SIZE
+from lib.data.text import TLSCiphertext
 
 
 class ConnectionState:
@@ -14,9 +15,9 @@ TLS_DEBUG = False
 
 class TLSConnection:
     __transport: Transport = None
-    __tls_handler: TLSRecordHandler = None
+    __tls_handler: TLSApplicationRecordHandler = None
 
-    def __init__(self, transport: Transport, *, tls_handler: TLSRecordHandler = None, is_server=False) -> None:
+    def __init__(self, transport: Transport, *, tls_handler: TLSApplicationRecordHandler = None, is_server=False) -> None:
         self.__transport = transport
 
         if tls_handler is None:
@@ -63,17 +64,15 @@ class TLSConnection:
                     print(f"Waited size: {__waited_size}")
                 # Get the header first
                 header_bytes = self.__transport.recv(5)
-                parsed_header = self.__tls_handler.parse(header_bytes)
+                parsed_header = self.__tls_handler.parse(
+                    header_bytes, with_data=False
+                )
 
                 payload_size = parsed_header.get_content_size()
                 payload_bytes = self.__transport.recv(payload_size)
-                mac = self.__transport.recv(MAC_SIZE)
 
-                # payload = self.__tls_handler.parse(
-                #     header_bytes + payload_bytes + mac)
                 payload = parsed_header
-                payload.set_content(payload_bytes)
-                payload.set_mac(mac)
+                payload.set_content(TLSCiphertext.parse(payload_bytes))
 
                 received = self.__tls_handler.unpack(payload)
 

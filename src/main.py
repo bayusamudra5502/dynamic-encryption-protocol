@@ -51,7 +51,7 @@ def send(conn: TLSConnection, data: bytes):
 def server(listen_addr: str, port: int):
     def handler(transport: Transport, conn: socket.socket, addr: tuple):
         print(f"Connection from {addr}")
-        conn = TLSConnection(transport, tls_handler=TLSRecordHandler(
+        conn = TLSConnection(transport, tls_handler=TLSApplicationRecordHandler(
             ProtocolVersion(3, 3), DynamicAES(c1), DynamicAES(
                 c3), DynamicHMAC(c2), DynamicHMAC(c4)
         ))
@@ -70,7 +70,7 @@ def server(listen_addr: str, port: int):
 
 def client(target_addr: str, port: int):
     transport = TCPClient(target_addr, port)
-    conn = TLSConnection(transport, tls_handler=TLSRecordHandler(
+    conn = TLSConnection(transport, tls_handler=TLSApplicationRecordHandler(
         ProtocolVersion(3, 3), DynamicAES(c3), DynamicAES(
             c1), DynamicHMAC(c4), DynamicHMAC(c2)
     ))

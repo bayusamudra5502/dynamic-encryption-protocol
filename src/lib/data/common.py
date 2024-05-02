@@ -1,4 +1,5 @@
 import struct
+import abc
 
 
 class ProtocolVersion:
@@ -25,3 +26,21 @@ class ContentType:
     ALERT = struct.pack("B", 21)
     HANDSHAKE = struct.pack("B", 22)
     APPLICATION_DATA = struct.pack("B", 23)
+
+
+class TLSPayload(abc.ABC):
+    @abc.abstractmethod
+    def encode(self) -> bytes:
+        pass
+
+    @staticmethod
+    def parse(data: bytes) -> 'TLSPayload':
+        pass
+
+    @abc.abstractmethod
+    def __eq__(self, other: 'TLSPayload') -> bool:
+        pass
+
+    @abc.abstractmethod
+    def length(self) -> int:
+        pass

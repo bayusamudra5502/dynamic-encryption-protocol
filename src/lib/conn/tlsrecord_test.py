@@ -12,7 +12,7 @@ def test_tlsrecord():
 
     seqnum = random_start()
 
-    alice = TLSRecordHandler(ProtocolVersion(
+    alice = TLSApplicationRecordHandler(ProtocolVersion(
         4, 0),
         DynamicAES(h1, block_size=16),
         DynamicAES(h2, block_size=16),
@@ -20,7 +20,7 @@ def test_tlsrecord():
         DynamicHMAC(m2),
         sequence_number=seqnum
     )
-    bob = TLSRecordHandler(
+    bob = TLSApplicationRecordHandler(
         ProtocolVersion(4, 0),
         DynamicAES(h2),
         DynamicAES(h1),
@@ -73,8 +73,10 @@ def test_tlsrecord():
         pass
 
     try:
-        result_eve = TLSRecordLayer(ProtocolVersion(0, 0), result_eve.get_content_type(
-        ), result_eve.get_content(), result_eve.get_mac(), content_size=result_eve.get_content_size())
+        result_eve = TLSRecordLayer(ProtocolVersion(0, 0),
+                                    result_eve.get_content_type(),
+                                    result_eve.get_content()
+                                    )
         alice.unpack(result_eve)
         assert False
     except CipherException:

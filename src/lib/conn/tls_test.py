@@ -85,7 +85,7 @@ def generate_tls_record_layer_handler():
 
     seqnum = random_start()
 
-    alice = TLSRecordHandler(ProtocolVersion(
+    alice = TLSApplicationRecordHandler(ProtocolVersion(
         4, 0),
         DynamicAES(h1, block_size=16),
         DynamicAES(h2, block_size=16),
@@ -93,7 +93,7 @@ def generate_tls_record_layer_handler():
         DynamicHMAC(m2),
         sequence_number=seqnum
     )
-    bob = TLSRecordHandler(
+    bob = TLSApplicationRecordHandler(
         ProtocolVersion(4, 0),
         DynamicAES(h2),
         DynamicAES(h1),
