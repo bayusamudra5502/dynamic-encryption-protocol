@@ -1,5 +1,6 @@
 from cryptography.hazmat.primitives.asymmetric import ec
 from lib.crypto.key import *
+from Crypto.Hash import SHA256
 
 
 def test_generate_shared_key():
@@ -16,6 +17,17 @@ def test_generate_shared_key():
     bob_key = generate_shared_secret(alice_public, bob)
 
     assert alice_key == bob_key
+
+
+def test_prf():
+    secret = b"secret"
+    label = b"label"
+    seed = b"\x11\x22\x33\x44"
+    length = 32
+
+    result = tls_prf(secret, label, seed, length, digestmod=SHA256)
+
+    assert len(result) == length
 
 
 def test_master_secret():
