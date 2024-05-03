@@ -1,6 +1,14 @@
 from lib.data.common import TLSPayload
 
 
+class CipherSuite:
+    TLS_ECDHE_ECDSA_WITH_AES_256_CHAOS_SHA256 = 0xC100
+
+
+class CompressionMethod:
+    NULL = 0x00
+
+
 class HashAlgorithm:
     SHA256 = b"\x04"
 

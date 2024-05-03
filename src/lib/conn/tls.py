@@ -2,6 +2,7 @@ from lib.conn.transport import Transport
 from lib.conn.tlsrecord import TLSApplicationRecordHandler
 from lib.exception.CipherException import CipherException
 from lib.data.text import TLSCiphertext
+from lib.conn.handshake import *
 
 
 class ConnectionState:
@@ -14,7 +15,7 @@ TLS_DEBUG = False
 
 class TLSConnection:
     __transport: Transport = None
-    __tls_handler: TLSApplicationRecordHandler = None
+    __tls_app_handler: TLSApplicationRecordHandler = None
 
     def __init__(self, transport: Transport, *, tls_handler: TLSApplicationRecordHandler = None, is_server=False) -> None:
         self.__transport = transport
@@ -24,14 +25,20 @@ class TLSConnection:
             self.handshake(is_server)
         else:
             __state: ConnectionState = ConnectionState.ESTABLISHED
-            self.__tls_handler = tls_handler
+            self.__tls_app_handler = tls_handler
 
     def get_state(self) -> ConnectionState:
         return self.__state
 
     def handshake(self, is_server) -> None:
-        # TODO
-        pass
+        if is_server:
+            handshake: TLSHandshake = ClientHandshake(self.__transport)
+        else:
+            handshake: TLSHandshake = ServerHandshake(self.__transport)
+
+        handshake.run()
+        self.__tls_app_handler = handshake.get_tls_application_record()
+        self.__state = ConnectionState.ESTABLISHED
 
     def send(self, data: bytes) -> None:
         length = len(data)
@@ -41,7 +48,7 @@ class TLSConnection:
             chunk = data[:chunk_size]
             data = data[chunk_size:]
 
-            record = self.__tls_handler.pack(chunk)
+            record = self.__tls_app_handler.pack(chunk)
             self.__transport.send(record.encode())
 
             length -= chunk_size
@@ -63,7 +70,7 @@ class TLSConnection:
                     print(f"Waited size: {__waited_size}")
                 # Get the header first
                 header_bytes = self.__transport.recv(5)
-                parsed_header = self.__tls_handler.parse(
+                parsed_header = self.__tls_app_handler.parse(
                     header_bytes, with_data=False
                 )
 
@@ -73,7 +80,7 @@ class TLSConnection:
                 payload = parsed_header
                 payload.set_content(TLSCiphertext.parse(payload_bytes))
 
-                received = self.__tls_handler.unpack(payload)
+                received = self.__tls_app_handler.unpack(payload)
 
                 data += received
                 __waited_size -= len(received)

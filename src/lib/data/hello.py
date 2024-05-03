@@ -92,4 +92,28 @@ class ClientHello(TLSPayload):
 
 
 class ServerHello(ClientHello):
-    pass
+    @staticmethod
+    def parse(data: bytes) -> 'TLSPayload':
+        version = ProtocolVersion.parse(data[:2])
+        random = Random.parse(data[2:34])
+        session_id = struct.unpack(">I", data[34:38])[0]
+        cipher_suites = struct.unpack(">H", data[38:40])[0]
+        compression_methods = struct.unpack(">B", data[40:41])[0]
+        extensions = data[41:]
+
+        return ServerHello(version, random, session_id, cipher_suites, compression_methods, extensions=extensions)
+
+
+class ServerHelloDone(TLSPayload):
+    def encode(self) -> bytes:
+        return b''
+
+    @staticmethod
+    def parse(data: bytes) -> 'TLSPayload':
+        return ServerHelloDone()
+
+    def __eq__(self, other: 'ServerHelloDone') -> bool:
+        return other is ServerHelloDone
+
+    def length(self) -> int:
+        return 0
