@@ -1,8 +1,8 @@
 from lib.conn.tlsrecord import *
-from lib.enc.aes import *
+from lib.crypto.aes import *
 from random import SystemRandom
 from lib.conn.tls import *
-from lib.enc.csprng import *
+from lib.crypto.csprng import *
 
 
 def test_tls():

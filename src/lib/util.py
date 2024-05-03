@@ -14,3 +14,20 @@ def xor(x: bytes, y: bytes) -> bytes:
         res.append(x[i] ^ y[i])
 
     return bytes(res)
+
+
+def to_bytes_big(x: int, length: int) -> bytes:
+    result = []
+    i = 0
+
+    while x > 0:
+        result.append(x & 0xff)
+        x >>= 8
+        i += 1
+
+    while i < length:
+        result.append(0)
+        i += 1
+
+    result = reversed(result)
+    return bytes(result)

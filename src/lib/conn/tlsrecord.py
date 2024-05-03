@@ -1,6 +1,6 @@
 from lib.data.common import *
 from lib.data.layer import *
-from lib.enc.aes import *
+from lib.crypto.aes import *
 
 MODULO_SIZE = 2**64
 

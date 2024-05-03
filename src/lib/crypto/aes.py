@@ -1,7 +1,7 @@
 from Crypto.Cipher import AES
 from Crypto.Hash import HMAC, SHA256
 from lib.util import *
-from lib.enc.csprng import CSPRNG
+from lib.crypto.csprng import CSPRNG
 from Crypto.Util.Padding import pad, unpad
 from lib.exception.CipherException import CipherException
 from abc import ABC, abstractmethod
@@ -61,6 +61,9 @@ class DynamicState:
         result.__next_chaos = self.__next_chaos
 
         return result
+
+    def __eq__(self: object, other: object) -> bool:
+        return self._get_current_key() == other._get_current_key()
 
 
 class DynamicAES(DynamicState, Cipher):

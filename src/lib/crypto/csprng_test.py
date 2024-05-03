@@ -1,4 +1,4 @@
-from lib.enc.csprng import *
+from lib.crypto.csprng import *
 from random import random
 
 

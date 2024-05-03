@@ -1,5 +1,5 @@
-from lib.enc.csprng import *
-from lib.enc.aes import *
+from lib.crypto.csprng import *
+from lib.crypto.aes import *
 from lib.util import *
 from lib.conn.tcp import *
 from lib.conn.tls import *

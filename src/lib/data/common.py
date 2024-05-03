@@ -15,7 +15,7 @@ class ProtocolVersion:
 
     @staticmethod
     def parse(data: bytes) -> 'ProtocolVersion':
-        return ProtocolVersion(data[0], data[1])
+        return ProtocolVersion(int(data[0]), int(data[1]))
 
     def __eq__(self, other: 'ProtocolVersion') -> bool:
         return self.__major == other.__major and self.__minor == other.__minor
@@ -44,3 +44,6 @@ class TLSPayload(abc.ABC):
     @abc.abstractmethod
     def length(self) -> int:
         pass
+
+    def __len__(self) -> int:
+        return self.length()

@@ -1,7 +1,6 @@
 from lib.conn.transport import Transport
 from lib.conn.tlsrecord import TLSApplicationRecordHandler
 from lib.exception.CipherException import CipherException
-from lib.enc.aes import MAC_SIZE
 from lib.data.text import TLSCiphertext
 
 

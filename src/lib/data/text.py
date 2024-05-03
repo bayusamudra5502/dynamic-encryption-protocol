@@ -1,5 +1,5 @@
 from lib.data.common import TLSPayload
-from lib.enc.aes import MAC_SIZE
+from lib.crypto.aes import MAC_SIZE
 
 
 class TLSCiphertext(TLSPayload):
