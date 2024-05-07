@@ -1,6 +1,8 @@
 from lib.data.common import *
 from lib.crypto.aes import MAC_SIZE
 from lib.data.text import *
+from lib.data.handshake import Handshake
+from lib.data.cipherspec import ChangeCipherSpec
 
 
 class TLSRecordLayer:
@@ -29,6 +31,9 @@ class TLSRecordLayer:
     def get_content(self) -> TLSPayload:
         return self.__content
 
+    def get_payload(self) -> bytes:
+        return self.get_content()
+
     def get_content_type(self) -> bytes:
         return self.__content_type
 
@@ -48,9 +53,16 @@ class TLSRecordLayer:
         content_size = struct.unpack(">H", data[3:5])[0]
 
         if with_data:
-            data = TLSCiphertext.parse(data=data[5:], mac_size=mac_size)
-            if data.length() != content_size:
-                raise ValueError("content size does not match data size")
+            if content_type == ContentType.APPLICATION_DATA:
+                data = TLSCiphertext.parse(data=data[5:], mac_size=mac_size)
+                if data.length() != content_size:
+                    raise ValueError("content size does not match data size")
+            elif content_type == ContentType.HANDSHAKE:
+                data = Handshake.parse(data=data[5:])
+            elif content_type == ContentType.CHANGE_CIPHER_SPEC:
+                data = ChangeCipherSpec.parse(data=data[5:])
+            else:
+                raise Exception("Unknown content type " + content_type)
 
             return TLSRecordLayer(version, content_type, data, content_size=content_size)
         else:

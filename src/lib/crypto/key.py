@@ -54,3 +54,10 @@ def generate_chaos_parameter(master_secret: bytes, client_random: bytes, server_
     hmac2 = DynamicHMAC(c4)
 
     return aes1, aes2, hmac1, hmac2
+
+
+def generate_finished_payload(master_secret: bytes, handshake_messages: bytes, is_client: bool) -> bytes:
+    if is_client:
+        return tls_prf(master_secret, b"client finished", handshake_messages, 12)
+    else:
+        return tls_prf(master_secret, b"server finished", handshake_messages, 12)

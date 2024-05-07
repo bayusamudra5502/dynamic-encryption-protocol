@@ -1,0 +1,196 @@
+In [24]:  res.public_bytes(Encoding.DER, PublicFormat.SubjectPublicKeyInfo)
+Out[24]: b'0v0\x10\x06\x07*\x86H\xce=\x02\x01\x06\x05+\x81\x04\x00"\x03b\x00\x04d%\x99A\xd3\xcc\x02\xe2H\x19I@\xd8G\xb74hT\\\xcc\x94%l>\xa7\xa2ew\x96vl\xff\x9e\xe1z\xba\x02\x0f\x15h\x96\xea\x06\xca\xfe\xfb\xd4>\x1b\x87\xd6\x94\xb4\x81\x98\xade%\xbf\xf9"T\xa6~(?h^g\x17;\x06\'\xc9\xdc^\xcd\x1fma\x82\x81-+\xfcKE\x82\xc5*O\xbf\x93X\x97T'
+
+In [25]: (1541401399672536831654856633130308223576243486652073683980474127033054710863110701131034164437
+    ...: 7267191251066943165502)
+Out[25]: 15414013996725368316548566331303082235762434866520736839804741270330547108631107011310341644377267191251066943165502
+
+In [26]:  res
+Out[26]: <cryptography.hazmat.bindings._rust.openssl.ec.ECPublicKey at 0x7f9c81c8e4f0>
+
+In [27]:  res.public_numbers()
+Out[27]: <EllipticCurvePublicNumbers(curve=secp384r1, x=15414013996725368316548566331303082235762434866520736839804741270330547108631107011310341644377267191251066943165502, y=4237349925019144457562146325645175795524601855540199727658189684655899330874554354184105653968434118490018025084756)>
+
+In [28]: hehe =  res.public_bytes(Encoding.DER, PublicFormat.SubjectPublicKeyInfo)
+
+In [29]: 15414013996725368316548566331303082235762434866520736839804741270330547108631107011310341644377
+    ...: 267191251066943165502.to_bytes()
+  Cell In[29], line 1
+    15414013996725368316548566331303082235762434866520736839804741270330547108631107011310341644377267191251066943165502.to_bytes()
+                                                                                                                        ^
+SyntaxError: invalid decimal literal
+
+
+In [30]: i = 1541401399672536831654856633130308223576243486652073683980474127033054710863110701131034164
+    ...: 4377267191251066943165502
+
+In [31]: log(0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffff0000000000000000f
+    ...: fffffff)/log(2)
+---------------------------------------------------------------------------
+NameError                                 Traceback (most recent call last)
+Cell In[31], line 1
+----> 1 log(0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffff0000000000000000ffffffff)/log(2)
+
+NameError: name 'log' is not defined
+
+In [32]: from math import log
+
+In [33]: log(0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffff0000000000000000f
+    ...: fffffff)/log(2)
+Out[33]: 384.0
+
+In [34]: log(0xffffffff00000001000000000000000000000000ffffffffffffffffffffffff)/log(2)
+Out[34]: 255.99999999966408
+
+In [35]: i = 1541401399672536831654856633130308223576243486652073683980474127033054710863110701131034164
+    ...: 4377267191251066943165502
+
+In [36]: i
+Out[36]: 15414013996725368316548566331303082235762434866520736839804741270330547108631107011310341644377267191251066943165502
+
+In [37]: 256/8
+Out[37]: 32.0
+
+In [38]: i.to_bytes(32)
+---------------------------------------------------------------------------
+OverflowError                             Traceback (most recent call last)
+Cell In[38], line 1
+----> 1 i.to_bytes(32)
+
+OverflowError: int too big to convert
+
+In [39]: i.to_bytes(32, byteorder="big")
+---------------------------------------------------------------------------
+OverflowError                             Traceback (most recent call last)
+Cell In[39], line 1
+----> 1 i.to_bytes(32, byteorder="big")
+
+OverflowError: int too big to convert
+
+In [40]:                                                                                                
+Do you really want to exit ([y]/n)? y
+(.venv) miawheker:src/ (main*) $ ipython                                                     [21:35:50]
+Python 3.12.2 (main, Feb 21 2024, 00:00:00) [GCC 13.2.1 20231205 (Red Hat 13.2.1-6)]
+Type 'copyright', 'credits' or 'license' for more information
+IPython 8.22.2 -- An enhanced Interactive Python. Type '?' for help.
+
+In [1]: from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
+
+In [2]: from cryptography.hazmat.primitives.asymmetric import ec
+
+In [3]: ec.generate_private_key(ec.SECP256R1())
+Out[3]: <cryptography.hazmat.bindings._rust.openssl.ec.ECPrivateKey at 0x7ffa1b6eed50>
+
+In [4]: res = ec.generate_private_key(ec.SECP256R1())
+
+In [5]: res.private_numbers()
+Out[5]: <cryptography.hazmat.primitives.asymmetric.ec.EllipticCurvePrivateNumbers at 0x7ffa29ccbbf0>
+
+In [6]: res.public_key().public_numbers()
+Out[6]: <EllipticCurvePublicNumbers(curve=secp256r1, x=69143864398341102023982528593715847800599601215796064071316720107838901412306, y=21116764541032208211293920862849117264564918114189632976770245998751383460112)>
+
+In [7]: ha = res.public_key().public_bytes(Encoding.DER, PublicFormat.SubjectPublicKeyInfo)
+
+In [8]: ha
+Out[8]: b'0Y0\x13\x06\x07*\x86H\xce=\x02\x01\x06\x08*\x86H\xce=\x03\x01\x07\x03B\x00\x04\x98\xde\nW\x16\x13\xb7\xad\x89pa\xbd2(\x82\xe2\x16\x9a\xd5\xa8\xb8\x98t]\xb6BKV_\x81a\xd2.\xaf\xaaI.\xa11+\xe1\xdb\x88\x8c\x82\xad=I\xf4K\x19\xf83\xe7\x05\x0c&\x80xW\x1c.\x99\x10'
+
+In [9]: import lib.util
+
+In [10]: from  lib.util import to_bytes_big
+
+In [11]: to_bytes_big(1,10)
+Out[11]: b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01'
+
+In [12]: to_bytes_big(x=69143864398341102023982528593715847800599601215796064071316720107838901412306,25
+    ...: 6)
+  Cell In[12], line 1
+    to_bytes_big(x=69143864398341102023982528593715847800599601215796064071316720107838901412306,256)
+                                                                                                    ^
+SyntaxError: positional argument follows keyword argument
+
+
+In [13]: to_bytes_big(69143864398341102023982528593715847800599601215796064071316720107838901412306,256)
+    ...: 
+Out[13]: b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x98\xde\nW\x16\x13\xb7\xad\x89pa\xbd2(\x82\xe2\x16\x9a\xd5\xa8\xb8\x98t]\xb6BKV_\x81a\xd2'
+
+In [14]: to_bytes_big(69143864398341102023982528593715847800599601215796064071316720107838901412306,256)
+    ...: 
+Out[14]: b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x98\xde\nW\x16\x13\xb7\xad\x89pa\xbd2(\x82\xe2\x16\x9a\xd5\xa8\xb8\x98t]\xb6BKV_\x81a\xd2'
+
+In [15]: 256//8
+Out[15]: 32
+
+In [16]: to_bytes_big(69143864398341102023982528593715847800599601215796064071316720107838901412306,32)
+Out[16]: b'\x98\xde\nW\x16\x13\xb7\xad\x89pa\xbd2(\x82\xe2\x16\x9a\xd5\xa8\xb8\x98t]\xb6BKV_\x81a\xd2'
+
+In [17]: ha
+Out[17]: b'0Y0\x13\x06\x07*\x86H\xce=\x02\x01\x06\x08*\x86H\xce=\x03\x01\x07\x03B\x00\x04\x98\xde\nW\x16\x13\xb7\xad\x89pa\xbd2(\x82\xe2\x16\x9a\xd5\xa8\xb8\x98t]\xb6BKV_\x81a\xd2.\xaf\xaaI.\xa11+\xe1\xdb\x88\x8c\x82\xad=I\xf4K\x19\xf83\xe7\x05\x0c&\x80xW\x1c.\x99\x10'
+
+In [18]: to_bytes_big(21116764541032208211293920862849117264564918114189632976770245998751383460112,32)
+Out[18]: b'.\xaf\xaaI.\xa11+\xe1\xdb\x88\x8c\x82\xad=I\xf4K\x19\xf83\xe7\x05\x0c&\x80xW\x1c.\x99\x10'
+
+In [19]: ec.generate_private_key(ec.SECP256R1())
+Out[19]: <cryptography.hazmat.bindings._rust.openssl.ec.ECPrivateKey at 0x7ffa1beca7d0>
+
+In [20]: ec.generate_private_key(ec.SECP256R1()).public_numbers()
+---------------------------------------------------------------------------
+AttributeError                            Traceback (most recent call last)
+Cell In[20], line 1
+----> 1 ec.generate_private_key(ec.SECP256R1()).public_numbers()
+
+AttributeError: 'cryptography.hazmat.bindings._rust.openssl.ec.ECPrivateKey' object has no attribute 'public_numbers'
+
+In [21]: ec.generate_private_key(ec.SECP256R1()).public_keys()
+---------------------------------------------------------------------------
+AttributeError                            Traceback (most recent call last)
+Cell In[21], line 1
+----> 1 ec.generate_private_key(ec.SECP256R1()).public_keys()
+
+AttributeError: 'cryptography.hazmat.bindings._rust.openssl.ec.ECPrivateKey' object has no attribute 'public_keys'
+
+In [22]: ec.generate_private_key(ec.SECP256R1()).public_key()
+Out[22]: <cryptography.hazmat.bindings._rust.openssl.ec.ECPublicKey at 0x7ff9f256fab0>
+
+In [23]: ec.generate_private_key(ec.SECP256R1()).public_key().public_numbers()
+Out[23]: <EllipticCurvePublicNumbers(curve=secp256r1, x=31650236857875122067428889029863559327813776777449405582190684956762236238911, y=6888420404947879835972900537585590002140103536548912974465252210753577325782)>
+
+In [24]: ec.generate_private_key(ec.SECP256R1()).public_key().public_numbers()
+Out[24]: <EllipticCurvePublicNumbers(curve=secp256r1, x=45690647343026130763216871433173697507060914943501805889028982262401785954997, y=80124519060403482958324868998941287796772661918297386465585486996654015970580)>
+
+In [25]: miu = b"0Y0\x13\x06\x07*\x86H\xce=\x02\x01\x06\x08*\x86H\xce=\x03\x01\x07\x03B\x00\x04" + to_by
+    ...: tes_big(45690647343026130763216871433173697507060914943501805889028982262401785954997) + to_byt
+    ...: es_big(80124519060403482958324868998941287796772661918297386465585486996654015970580)
+---------------------------------------------------------------------------
+TypeError                                 Traceback (most recent call last)
+Cell In[25], line 1
+----> 1 miu = b"0Y0\x13\x06\x07*\x86H\xce=\x02\x01\x06\x08*\x86H\xce=\x03\x01\x07\x03B\x00\x04" + to_bytes_big(45690647343026130763216871433173697507060914943501805889028982262401785954997) + to_bytes_big(80124519060403482958324868998941287796772661918297386465585486996654015970580)
+
+TypeError: to_bytes_big() missing 1 required positional argument: 'length'
+
+In [26]: miu = b"0Y0\x13\x06\x07*\x86H\xce=\x02\x01\x06\x08*\x86H\xce=\x03\x01\x07\x03B\x00\x04" + to_by
+    ...: tes_big(45690647343026130763216871433173697507060914943501805889028982262401785954997,32) + to_
+    ...: bytes_big(80124519060403482958324868998941287796772661918297386465585486996654015970580,32)
+
+In [27]: miu
+Out[27]: b'0Y0\x13\x06\x07*\x86H\xce=\x02\x01\x06\x08*\x86H\xce=\x03\x01\x07\x03B\x00\x04e\x03\xfdm\x89S\x17R\x00k\xab\xecY\x99J\x9a0G\xfc)\xa0c\xc2Q*Og~\xb4<\x82\xb5\xb1$\xde\xe52{\xc8\x89@\xb7\xf3\x8cwc\x95^\xd4\x0e{9}\x1a8\x86\xeb\x92\xa7\xdc\xb7\x90\xfd\x14'
+
+In [28]: from cryptography.hazmat.primitives.serialization import load_pem_public_key
+    ...: 
+
+In [29]: from cryptography.hazmat.primitives.serialization import load_der_public_key
+
+In [30]: load_der_public_key(miu)
+Out[30]: <cryptography.hazmat.bindings._rust.openssl.ec.ECPublicKey at 0x7ff9f2550ab0>
+
+In [31]: load_der_public_key(miu).public_key().public_numbers()
+---------------------------------------------------------------------------
+AttributeError                            Traceback (most recent call last)
+Cell In[31], line 1
+----> 1 load_der_public_key(miu).public_key().public_numbers()
+
+AttributeError: 'cryptography.hazmat.bindings._rust.openssl.ec.ECPublicKey' object has no attribute 'public_key'
+
+In [32]: load_der_public_key(miu).public_numbers()
+Out[32]: <EllipticCurvePublicNumbers(curve=secp256r1, x=45690647343026130763216871433173697507060914943501805889028982262401785954997, y=80124519060403482958324868998941287796772661918297386465585486996654015970580)>
+
+In [33]: 

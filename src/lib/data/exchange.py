@@ -139,6 +139,12 @@ class ServerKeyExchange(KeyExchange):
     def get_public_key(self) -> ec.EllipticCurvePublicKey:
         return self.__ecdh_params.get_public_key()
 
+    def get_params(self):
+        return self.__ecdh_params
+
+    def get_signature(self):
+        return self.__signature
+
 
 class ClientKeyExchange(KeyExchange):
     __public = None

@@ -37,6 +37,12 @@ class Random(TLSPayload):
     def length(self) -> int:
         return 4+28
 
+    def get_time(self) -> int:
+        return self.__time
+
+    def get_bytes(self) -> bytes:
+        return self.__random_bytes
+
 
 class ClientHello(TLSPayload):
     __version: ProtocolVersion = None
@@ -89,6 +95,9 @@ class ClientHello(TLSPayload):
 
     def length(self) -> int:
         return len(self.encode())
+
+    def get_random(self) -> Random:
+        return self.__random
 
 
 class ServerHello(ClientHello):

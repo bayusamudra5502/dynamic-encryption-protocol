@@ -47,3 +47,6 @@ class TLSPayload(abc.ABC):
 
     def __len__(self) -> int:
         return self.length()
+
+
+VERSION_TLS_12 = ProtocolVersion(3, 3)

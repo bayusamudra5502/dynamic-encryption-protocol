@@ -1,6 +1,7 @@
 import socket
 import multiprocessing as mp
 from lib.conn.transport import Transport
+from lib.log import Log
 
 
 class TCPServer:
@@ -27,9 +28,8 @@ class TCPServer:
                         with self.__process_lock:
                             self.__process.append(process)
                             process.start()
-
                     except Exception as err:
-                        print(f"Error: {err}")
+                        Log.error(err)
             finally:
                 for i in self.__process:
                     i.join()

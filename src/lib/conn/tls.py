@@ -3,6 +3,8 @@ from lib.conn.tlsrecord import TLSApplicationRecordHandler
 from lib.exception.CipherException import CipherException
 from lib.data.text import TLSCiphertext
 from lib.conn.handshake import *
+from cryptography.x509 import Certificate
+from lib.log import Log
 
 
 class ConnectionState:
@@ -10,15 +12,18 @@ class ConnectionState:
     ESTABLISHED = 1
 
 
-TLS_DEBUG = False
-
-
 class TLSConnection:
     __transport: Transport = None
     __tls_app_handler: TLSApplicationRecordHandler = None
+    __certificates: list[Certificate] = []
+    __private_key: ec.EllipticCurvePrivateKey = None
+    __version: ProtocolVersion = None
 
-    def __init__(self, transport: Transport, *, tls_handler: TLSApplicationRecordHandler = None, is_server=False) -> None:
+    def __init__(self, transport: Transport, *, tls_handler: TLSApplicationRecordHandler = None, is_server=False, certificates: list[Certificate] = [], version=ProtocolVersion(3, 3), private_key: ec.EllipticCurvePrivateKey = None) -> None:
         self.__transport = transport
+        self.__certificates = certificates
+        self.__version = version
+        self.__private_key = private_key
 
         if tls_handler is None:
             self.__state = ConnectionState.HANDSHAKE
@@ -32,9 +37,11 @@ class TLSConnection:
 
     def handshake(self, is_server) -> None:
         if is_server:
-            handshake: TLSHandshake = ClientHandshake(self.__transport)
+            handshake: TLSHandshake = ClientHandshake(
+                self.__version, self.__transport)
         else:
-            handshake: TLSHandshake = ServerHandshake(self.__transport)
+            handshake: TLSHandshake = ServerHandshake(
+                self.__version, self.__transport, self.__certificates, self.__private_key)
 
         handshake.run()
         self.__tls_app_handler = handshake.get_tls_application_record()
@@ -66,8 +73,8 @@ class TLSConnection:
 
         while __waited_size > 0:
             try:
-                if TLS_DEBUG:
-                    print(f"Waited size: {__waited_size}")
+                Log.debug(f"Waited size: {__waited_size}")
+
                 # Get the header first
                 header_bytes = self.__transport.recv(5)
                 parsed_header = self.__tls_app_handler.parse(
@@ -85,7 +92,7 @@ class TLSConnection:
                 data += received
                 __waited_size -= len(received)
             except CipherException as err:
-                print(f"Error: {err}")
+                Log.debug(err)
                 continue
 
         self.__buffered_data = data[size:]

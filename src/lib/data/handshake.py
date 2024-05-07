@@ -30,10 +30,13 @@ class Handshake(TLSPayload):
         return self.__type.to_bytes(1, "big") + self.__length.to_bytes(3, "big") + self.__payload.encode()
 
     @staticmethod
-    def parse(data: bytes) -> 'Handshake':
+    def parse(data: bytes, *, header_only=False) -> 'Handshake':
         handshake_type = int(data[0])
         length = int.from_bytes(data[1:4], "big")
         payload = data[4:]
+
+        if header_only:
+            return Handshake(handshake_type, None, length=length)
 
         if handshake_type == HandshakeType.CLIENT_HELLO:
             from lib.data.hello import ClientHello
@@ -42,8 +45,8 @@ class Handshake(TLSPayload):
             from lib.data.hello import ServerHello
             return Handshake(handshake_type, ServerHello.parse(payload), length=length)
         elif handshake_type == HandshakeType.CERTIFICATE:
-            # TODO
-            raise Exception("Not implemented yet")
+            from lib.data.certificate import TLSCertificate
+            return Handshake(handshake_type, TLSCertificate.parse(payload), length=length)
         elif handshake_type == HandshakeType.SERVER_KEY_EXCHANGE:
             from lib.data.exchange import ServerKeyExchange
             return Handshake(handshake_type, ServerKeyExchange.parse(payload), length=length)
@@ -54,8 +57,10 @@ class Handshake(TLSPayload):
             from lib.data.exchange import ClientKeyExchange
             return Handshake(handshake_type, ClientKeyExchange.parse(payload), length=length)
         elif handshake_type == HandshakeType.FINISHED:
-            # TODO
-            raise Exception("Not implemented yet")
+            from lib.data.finish import Finished
+            return Handshake(handshake_type, Finished.parse(payload), length=length)
+        else:
+            raise Exception("Unknown type " + handshake_type)
 
     def __eq__(self, other: 'Handshake') -> bool:
         return self.__type == other.__type and self.__length == other.__length and self.__payload == other.__payload
@@ -65,3 +70,6 @@ class Handshake(TLSPayload):
 
     def get_payload(self) -> TLSPayload:
         return self.__payload
+
+    def get_type(self):
+        return self.__type

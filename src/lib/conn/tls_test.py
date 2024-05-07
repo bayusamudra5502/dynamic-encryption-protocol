@@ -3,6 +3,7 @@ from lib.crypto.aes import *
 from random import SystemRandom
 from lib.conn.tls import *
 from lib.crypto.csprng import *
+from lib.conn.memory import *
 
 
 def test_tls():
@@ -46,22 +47,6 @@ def test_tls_recv_small():
 
     data = bob_conn.recv(6)
     assert data == b", Bob!"
-
-
-class MemoryTransport(Transport):
-    def __init__(self):
-        self.__data = b""
-
-    def send(self, data: bytes) -> None:
-        self.__data += data
-
-    def recv(self, size: int) -> bytes:
-        data = self.__data[:size]
-        self.__data = self.__data[size:]
-        return data
-
-    def buffer_size(self) -> int:
-        return len(self.__data)
 
 
 def random_henon():

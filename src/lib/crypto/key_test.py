@@ -96,3 +96,15 @@ def test_chaos_parameter():
 
     mac = bob_hmac1.generate(b"Hello")
     assert alice_hmac1.verify(b"Hello", mac)
+
+
+def test_generate_finished_payload():
+    secret = b"secret"
+    message = b"message" * 20
+
+    client_payload = generate_finished_payload(secret, message, True)
+    server_payload = generate_finished_payload(secret, message, False)
+
+    assert client_payload != server_payload
+    assert len(client_payload) == 12
+    assert len(server_payload) == 12
