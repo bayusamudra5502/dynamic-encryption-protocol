@@ -2,6 +2,7 @@ from lib.data.common import *
 from time import time
 from secrets import randbits
 import struct
+from lib.util import to_bytes_big
 
 
 class Random(TLSPayload):
@@ -47,9 +48,9 @@ class Random(TLSPayload):
 class ClientHello(TLSPayload):
     __version: ProtocolVersion = None
     __random: Random = None
-    __session_id: int = 0
-    __cipher_suites: int = None
-    __compression_methods: int = None
+    __session_ids: int = 0
+    __cipher_suites: list[int] = []
+    __compression_methods: list[int] = []
     __extensions: int | None = None
 
     def __init__(self,
@@ -63,24 +64,43 @@ class ClientHello(TLSPayload):
         super().__init__()
         self.__version = version
         self.__random = random
-        self.__session_id = session_id
-        self.__cipher_suites = cipher_suite
-        self.__compression_methods = compression_method
+
+        self.__session_ids = session_id
+
+        self.__cipher_suites = [cipher_suite]
+        self.__compression_methods = [compression_method]
         self.__extensions = extensions
 
     def encode(self) -> bytes:
         version = self.__version.encode()
         random = self.__random.encode()
-        session_id = struct.pack(">I", self.__session_id)
-        cipher_suites = struct.pack(">H", self.__cipher_suites)
-        compression_methods = struct.pack(">B", self.__compression_methods)
 
-        return version + random + session_id + cipher_suites + compression_methods + self.__extensions
+        session_id_length = int(32).to_bytes(1)
+        cipher_suites_length = len(self.__cipher_suites).to_bytes(2)
+        compression_methods_length = len(
+            self.__compression_methods).to_bytes(1)
+
+        encoded_session_id = to_bytes_big(i, 32)
+
+        encoded_cipher_suite = b""
+        for i in self.__cipher_suites:
+            encoded_cipher_suite += struct.pack(">H", i)
+
+        encoded_compression = b""
+        for i in self.__compression_methods:
+            encoded_compression += struct.pack(">B",
+                                               self.__compression_methods)
+
+        return version + random + session_id_length \
+            + encoded_session_id + cipher_suites_length \
+            + encoded_cipher_suite + compression_methods_length + \
+            encoded_compression + self.__extensions
 
     @staticmethod
     def parse(data: bytes) -> 'TLSPayload':
         version = ProtocolVersion.parse(data[:2])
         random = Random.parse(data[2:34])
+
         session_id = struct.unpack(">I", data[34:38])[0]
         cipher_suites = struct.unpack(">H", data[38:40])[0]
         compression_methods = struct.unpack(">B", data[40:41])[0]
@@ -90,7 +110,7 @@ class ClientHello(TLSPayload):
 
     def __eq__(self, other: 'ClientHello') -> bool:
         return self.__version == other.__version and self.__random == other.__random \
-            and self.__session_id == other.__session_id and self.__cipher_suites == other.__cipher_suites \
+            and self.__session_ids == other.__session_ids and self.__cipher_suites == other.__cipher_suites \
             and self.__compression_methods == other.__compression_methods and self.__extensions == other.__extensions
 
     def length(self) -> int:
@@ -98,6 +118,9 @@ class ClientHello(TLSPayload):
 
     def get_random(self) -> Random:
         return self.__random
+
+    def get_session_id(self) -> int:
+        return self.__session_id
 
 
 class ServerHello(ClientHello):

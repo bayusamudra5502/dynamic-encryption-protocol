@@ -31,3 +31,12 @@ def to_bytes_big(x: int, length: int) -> bytes:
 
     result = reversed(result)
     return bytes(result)
+
+
+def to_int_big(x: bytes) -> int:
+    result = 0
+
+    for i in range(len(x)):
+        result |= x[i] << (8 * (len(x) - i - 1))
+
+    return result

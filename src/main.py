@@ -4,8 +4,12 @@ from lib.util import *
 from lib.conn.tcp import *
 from lib.conn.tls import *
 from lib.conn.tlsrecord import *
+from cryptography.x509 import load_pem_x509_certificate
+from cryptography.hazmat.primitives.serialization import load_pem_private_key
 
+import os
 import argparse
+
 
 # Server Chaos
 c1 = SineHenonMap(0.67, 0.12)
@@ -24,12 +28,34 @@ parser.add_argument(
     '--address', '-a', help="Bind Address (Server) or Target Address (Client)", required=True)
 parser.add_argument(
     '--port', '-p', help="Port to bind or connect", required=True)
+parser.add_argument(
+    "--cert", "-c", help="Certificate file (Server only)")
+parser.add_argument(
+    "--key", "-k", help="Private key file (Server only)")
 
 args = vars(parser.parse_args())
 print(args)
 mode = args['mode']
 address = args['address']
 port = args['port']
+
+if mode == 'server':
+    cert_path = args['cert']
+    key_path = args['key']
+
+    if not os.path.exists(cert_path):
+        print(f"Certificate file {cert_path} not found")
+        exit(1)
+
+    if not os.path.exists(key_path):
+        print(f"Private key file {key_path} not found")
+        exit(1)
+
+    with open(cert_path, 'rb') as f:
+        cert = load_pem_x509_certificate(f.read())
+
+    with open(key_path, 'rb') as f:
+        key = load_pem_private_key(f.read(), password=None)
 
 
 def receive(conn: TLSConnection):
@@ -49,12 +75,14 @@ def send(conn: TLSConnection, data: bytes):
 
 
 def server(listen_addr: str, port: int):
-    def handler(transport: Transport, conn: socket.socket, addr: tuple):
+    assert cert is not None
+    assert key is not None
+
+    def handler(transport: Transport, _: socket.socket, addr: tuple):
         print(f"Connection from {addr}")
-        conn = TLSConnection(transport, tls_handler=TLSApplicationRecordHandler(
-            ProtocolVersion(3, 3), DynamicAES(c1), DynamicAES(
-                c3), DynamicHMAC(c2), DynamicHMAC(c4)
-        ))
+        conn = TLSConnection(transport, is_server=True,
+                             certificates=[cert], private_key=key)
+        print(f"Session id: {conn.get_session_id()}")
 
         while True:
             data = receive(conn)
@@ -70,10 +98,9 @@ def server(listen_addr: str, port: int):
 
 def client(target_addr: str, port: int):
     transport = TCPClient(target_addr, port)
-    conn = TLSConnection(transport, tls_handler=TLSApplicationRecordHandler(
-        ProtocolVersion(3, 3), DynamicAES(c3), DynamicAES(
-            c1), DynamicHMAC(c4), DynamicHMAC(c2)
-    ))
+    conn = TLSConnection(transport)
+
+    print(f"Session id: {conn.get_session_id()}")
 
     while True:
         data = input("Send: ")

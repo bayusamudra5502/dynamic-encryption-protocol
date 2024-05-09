@@ -18,6 +18,7 @@ class TLSConnection:
     __certificates: list[Certificate] = []
     __private_key: ec.EllipticCurvePrivateKey = None
     __version: ProtocolVersion = None
+    __session_id: int = None
 
     def __init__(self, transport: Transport, *, tls_handler: TLSApplicationRecordHandler = None, is_server=False, certificates: list[Certificate] = [], version=ProtocolVersion(3, 3), private_key: ec.EllipticCurvePrivateKey = None) -> None:
         self.__transport = transport
@@ -29,14 +30,17 @@ class TLSConnection:
             self.__state = ConnectionState.HANDSHAKE
             self.handshake(is_server)
         else:
-            __state: ConnectionState = ConnectionState.ESTABLISHED
+            self.__state: ConnectionState = ConnectionState.ESTABLISHED
             self.__tls_app_handler = tls_handler
 
     def get_state(self) -> ConnectionState:
         return self.__state
 
+    def get_session_id(self) -> int:
+        return self.__session_id
+
     def handshake(self, is_server) -> None:
-        if is_server:
+        if not is_server:
             handshake: TLSHandshake = ClientHandshake(
                 self.__version, self.__transport)
         else:
@@ -46,6 +50,7 @@ class TLSConnection:
         handshake.run()
         self.__tls_app_handler = handshake.get_tls_application_record()
         self.__state = ConnectionState.ESTABLISHED
+        self.__session_id = handshake.get_session_id()
 
     def send(self, data: bytes) -> None:
         length = len(data)
@@ -73,8 +78,6 @@ class TLSConnection:
 
         while __waited_size > 0:
             try:
-                Log.debug(f"Waited size: {__waited_size}")
-
                 # Get the header first
                 header_bytes = self.__transport.recv(5)
                 parsed_header = self.__tls_app_handler.parse(

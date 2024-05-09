@@ -28,3 +28,4 @@ def test_certificate():
 
     assert certificate == certificate_new
     assert certificate.get_certificates() == [cert]
+    assert len(certificate) == len(certificate_encoded)

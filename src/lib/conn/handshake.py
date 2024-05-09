@@ -51,6 +51,10 @@ class TLSHandshake(ABC):
             data = self._transport.recv(record.get_content_size())
             return Handshake.parse(data)
 
+    @abstractmethod
+    def get_session_id(self) -> int:
+        pass
+
 
 class ClientHandshake(TLSHandshake):
     _client_hello = None
@@ -276,6 +280,9 @@ class ClientHandshake(TLSHandshake):
         )
 
         return TLSApplicationRecordHandler(self._version,  aes_client, aes_server, hmac_client, hmac_server)
+
+    def get_session_id(self) -> int:
+        return self._server_hello.get_payload().get_session_id()
 
 
 class ServerHandshake(TLSHandshake):
@@ -508,3 +515,6 @@ class ServerHandshake(TLSHandshake):
         )
 
         return TLSApplicationRecordHandler(self._version, aes_server, aes_client, hmac_server, hmac_client)
+
+    def get_session_id(self) -> int:
+        return self._server_hello.get_payload().get_session_id()
