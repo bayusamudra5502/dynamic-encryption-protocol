@@ -12,12 +12,30 @@ class TLSCertificate(TLSPayload):
 
     def encode(self) -> bytes:
         parsed = self.__certificate_list[0].public_bytes(encoding=Encoding.DER)
-        return parsed
+        parsed_length = (len(parsed)).to_bytes(3, "big")
+
+        asn1_parsed = parsed_length + parsed
+        asn1_parsed_length = len(asn1_parsed).to_bytes(3, "big")
+
+        return asn1_parsed_length + asn1_parsed
 
     @staticmethod
     def parse(data: bytes) -> 'TLSPayload':
-        certs = load_der_x509_certificate(data)
-        return TLSCertificate([certs])
+        certs = []
+        processed = 0
+        certificate_length = int.from_bytes(data[:3], "big")
+        asn1_parsed = data[3:]
+
+        while processed < certificate_length:
+            cert_length = int.from_bytes(
+                asn1_parsed[processed:processed+3], "big")
+            cert_der = asn1_parsed[processed+3:processed+3+cert_length]
+            certificate = load_der_x509_certificate(cert_der)
+
+            certs.append(certificate)
+            processed += 3 + cert_length
+
+        return TLSCertificate(certs)
 
     def __eq__(self, other: 'TLSCertificate') -> bool:
         return self.__certificate_list == other.__certificate_list
