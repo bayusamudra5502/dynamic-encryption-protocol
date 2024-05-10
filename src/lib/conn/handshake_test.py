@@ -51,7 +51,7 @@ def test_client_hello():
     record = client2._get_handshake()
 
     assert record.get_type() == HandshakeType.CLIENT_HELLO
-    assert record.length() == 45
+    assert record.length() == 77
     assert isinstance(record.get_payload(), ClientHello)
     assert client._phase == 1
 
@@ -75,7 +75,7 @@ def test_server_hello():
 
     # Server Hello Test
     assert record.get_type() == HandshakeType.SERVER_HELLO
-    assert record.length() == 45
+    assert record.length() == 74
     assert isinstance(server._server_hello.get_payload(), ServerHello)
 
     record = client._get_handshake()

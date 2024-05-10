@@ -127,8 +127,8 @@ class ClientHandshake(TLSHandshake):
                     self._version,
                     Random(),
                     0,
-                    CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_256_CHAOS_SHA256,
-                    CompressionMethod.NULL,
+                    [CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_256_CHAOS_SHA256],
+                    [CompressionMethod.NULL],
                 )
             )
         )
@@ -195,9 +195,8 @@ class ClientHandshake(TLSHandshake):
             self._client_finished
         )
 
-        self._transport.send(client_exchange.encode())
-        self._transport.send(change_cipher_spec.encode())
-        self._transport.send(client_finished.encode())
+        self._transport.send(client_exchange.encode(
+        ) + change_cipher_spec.encode() + client_finished.encode())
 
         self._phase = ClientHandshake.Phase.FINISHED
 
@@ -366,7 +365,7 @@ class ServerHandshake(TLSHandshake):
                 ServerHello(
                     self._version,
                     Random(),
-                    randbits(32),
+                    randbits(32 * 8),
                     CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_256_CHAOS_SHA256,
                     CompressionMethod.NULL,
                 )
@@ -413,10 +412,8 @@ class ServerHandshake(TLSHandshake):
         )
 
         # TODO: Send Certificate
-        self._transport.send(server_hello.encode())
-        self._transport.send(server_key_exchange.encode())
-        self._transport.send(certificate.encode())
-        self._transport.send(server_hello_end.encode())
+        self._transport.send(server_hello.encode(
+        ) + server_key_exchange.encode() + certificate.encode() + server_hello_end.encode())
 
         self._server_hello = server_hello.get_content()
         self._server_key_exchange = server_key_exchange.get_content()
@@ -455,8 +452,8 @@ class ServerHandshake(TLSHandshake):
             self._server_finished
         )
 
-        self._transport.send(change_cipher_spec.encode())
-        self._transport.send(server_finished.encode())
+        self._transport.send(change_cipher_spec.encode() +
+                             server_finished.encode())
 
         self._phase = ClientHandshake.Phase.ESTABLISHED
 

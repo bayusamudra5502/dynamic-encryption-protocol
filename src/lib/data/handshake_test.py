@@ -10,8 +10,8 @@ def test_handshake_client_hello():
         ProtocolVersion(3, 3),
         random,
         455,
-        0,
-        0,
+        [0],
+        [0],
     )
 
     handshake = Handshake(HandshakeType.CLIENT_HELLO, client_hello)

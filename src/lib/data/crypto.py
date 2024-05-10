@@ -2,7 +2,8 @@ from lib.data.common import TLSPayload
 
 
 class CipherSuite:
-    TLS_ECDHE_ECDSA_WITH_AES_256_CHAOS_SHA256 = 0xC100
+    TLS_ECDHE_ECDSA_WITH_AES_256_CHAOS_SHA256 = 0xFF01
+    TLS_NULL_WITH_NULL_NULL = 0x0000
 
 
 class CompressionMethod:

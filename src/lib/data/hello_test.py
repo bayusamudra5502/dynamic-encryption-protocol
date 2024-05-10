@@ -18,12 +18,12 @@ def test_client_hello():
         ProtocolVersion(3, 3),
         random,
         455,
-        0,
-        0,
+        [12, 90],
+        [89, 12],
     )
 
     data = client.encode()
-    assert len(data) == 41
+    assert len(data) == 76
 
     payload = ClientHello.parse(data)
 
@@ -41,7 +41,7 @@ def test_server_hello():
     )
 
     data = client.encode()
-    assert len(data) == 41
+    assert len(data) == 70
 
     payload = ServerHello.parse(data)
 
