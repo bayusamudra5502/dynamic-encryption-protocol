@@ -48,6 +48,8 @@ class TLSApplicationRecordHandler:
         self.__sequence_number = (sequence_number + 1) % MODULO_SIZE
 
         dec_data = self.__write_server_aes.decrypt(data)
+        self.__write_server_mac.rotate()
+
         return dec_data
 
     def pack(self, data: bytes) -> TLSRecordLayer:

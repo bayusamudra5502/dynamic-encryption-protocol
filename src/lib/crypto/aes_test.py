@@ -43,13 +43,14 @@ def test_dmac():
     dmac_verify = DynamicHMAC(mac_map)
 
     result1 = dmac.generate(message)
-
     assert dmac_verify.verify(message, result1)
+    dmac_verify.rotate()
 
     result2 = dmac.generate(message)
     assert result1 != result2
 
     assert dmac_verify.verify(message, result2)
+    dmac_verify.rotate()
 
 
 def test_dmac_failed():
@@ -65,6 +66,8 @@ def test_dmac_failed():
 
     try:
         assert dmac.verify(message, result)
+        dmac.rotate()
+
         assert False
     except CipherException:
         assert True

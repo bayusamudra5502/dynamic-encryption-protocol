@@ -88,6 +88,7 @@ def test_chaos_parameter():
 
     mac = alice_hmac1.generate(b"Hello")
     assert bob_hmac1.verify(b"Hello", mac)
+    bob_hmac1.rotate()
 
     enc = bob_aes1.encrypt(b"Miuu")
     dec = alice_aes1.decrypt(enc)
@@ -96,6 +97,7 @@ def test_chaos_parameter():
 
     mac = bob_hmac1.generate(b"Hello")
     assert alice_hmac1.verify(b"Hello", mac)
+    alice_hmac1.rotate()
 
 
 def test_generate_finished_payload():

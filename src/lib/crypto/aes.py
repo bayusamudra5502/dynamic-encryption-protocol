@@ -30,12 +30,12 @@ class MAC(ABC):
 
 
 class DynamicState:
-    __next_chaos: CSPRNG
-    __current_key: bytes
+    _next_chaos: CSPRNG
+    _current_key: bytes
 
     def __init__(self, chaos=None) -> None:
         if not chaos is None:
-            self.__current_key, self.__next_chaos = self._generate_bytes(chaos)
+            self._current_key, self._next_chaos = self._generate_bytes(chaos)
 
     def _generate_bytes(self, chaos: CSPRNG, *, length=32) -> tuple[bytes, CSPRNG]:
         new_chaos = chaos.copy()
@@ -51,16 +51,19 @@ class DynamicState:
         return bytes(key), new_chaos
 
     def _get_current_key(self) -> bytes:
-        return self.__current_key
+        return self._current_key
 
     def rotate(self):
-        self.__current_key, self.__next_chaos = self._generate_bytes(
-            self.__next_chaos)
+        self._current_key, self._next_chaos = self._generate_bytes(
+            self._next_chaos)
+
+    def _get_state(self):
+        return self._current_key, self._next_chaos
 
     def _copy(self):
         result = DynamicState()
-        result.__current_key = self.__current_key
-        result.__next_chaos = self.__next_chaos
+        result._current_key = self._current_key
+        result._next_chaos = self._next_chaos
 
         return result
 
@@ -91,39 +94,55 @@ class DynamicAES(DynamicState, Cipher):
         data = pad(data, 16)
         cipertext = bytearray()
 
-        for i in range(0, len(data), self.__block_size):
-            key = self._get_current_key()
-            self.rotate()
+        start_state, start_next_chaos = self._get_state()
 
-            ctr = self.__calculate_ctr()
+        try:
+            for i in range(0, len(data), self.__block_size):
+                key = self._get_current_key()
+                self.rotate()
 
-            plaintext = data[i:i+self.__block_size]
+                ctr = self.__calculate_ctr()
 
-            aes = AES.new(key, AES.MODE_ECB)
-            stream_key = aes.encrypt(ctr)
+                plaintext = data[i:i+self.__block_size]
 
-            res = xor(plaintext, stream_key)
-            cipertext.extend(res)
+                aes = AES.new(key, AES.MODE_ECB)
+                stream_key = aes.encrypt(ctr)
+
+                res = xor(plaintext, stream_key)
+                cipertext.extend(res)
+        except Exception as e:
+            # Rollback
+            self._current_key = start_state
+            self._next_chaos = start_next_chaos
+            raise e
 
         return bytes(cipertext)
 
     def decrypt(self, data: bytes):
         plaintext = []
 
-        for i in range(0, len(data), self.__block_size):
-            key = self._get_current_key()
-            self.rotate()
+        start_state, start_next_chaos = self._get_state()
 
-            ctr = self.__calculate_ctr()
+        try:
+            for i in range(0, len(data), self.__block_size):
+                key = self._get_current_key()
+                self.rotate()
 
-            block_data = data[i:i+self.__block_size]
-            ciphertext = block_data
+                ctr = self.__calculate_ctr()
 
-            aes = AES.new(key, AES.MODE_ECB)
-            stream_key = aes.encrypt(ctr)
+                block_data = data[i:i+self.__block_size]
+                ciphertext = block_data
 
-            res = xor(ciphertext, stream_key)
-            plaintext.extend(res)
+                aes = AES.new(key, AES.MODE_ECB)
+                stream_key = aes.encrypt(ctr)
+
+                res = xor(ciphertext, stream_key)
+                plaintext.extend(res)
+        except Exception as e:
+            # Rollback
+            self._current_key = start_state
+            self._next_chaos = start_next_chaos
+            raise e
 
         return unpad(bytes(plaintext), 16)
 
@@ -146,6 +165,5 @@ class DynamicHMAC(DynamicState, MAC):
     def verify(self, data: bytes, mac: bytes) -> bool:
         if mac != self.__generate(data):
             raise CipherException("MAC verification failed")
-        self.rotate()
 
         return True
