@@ -3,7 +3,7 @@ from random import random
 
 
 def test_chaos():
-    x = SineHenonMap(random(), random())
+    x = SineHenonMap(random(), random(), random())
 
     assert x == x
 

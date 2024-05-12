@@ -99,7 +99,7 @@ def test_tlsrecord():
 def random_henon():
     cryptogen = SystemRandom()
     mac_map = SineHenonMap(cryptogen.random(),
-                           cryptogen.random())
+                           cryptogen.random(), cryptogen.random())
 
     return mac_map
 

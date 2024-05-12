@@ -11,14 +11,6 @@ import os
 import argparse
 
 
-# Server Chaos
-c1 = SineHenonMap(0.67, 0.12)
-c2 = SineHenonMap(0.11, 0.17)
-
-# Client Chaos
-c3 = SineHenonMap(0.19, 0.23)
-c4 = SineHenonMap(0.29, 0.31)
-
 parser = argparse.ArgumentParser(
     prog='main.py',
     description='This is chatbot application using Dynamic Encryption')

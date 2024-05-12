@@ -152,35 +152,38 @@ class LogisticMap(CSPRNG):
 class SineHenonMap(CSPRNG):
     __a: float
     __b: float
+    __c: float
 
-    def __init__(self, a, b) -> None:
+    def __init__(self, a, b, c) -> None:
         self.__a = a
         self.__b = b
+        self.__c = c
 
     def __str__(self) -> str:
         return f"({self.__a}, {self.__b})"
 
     def __eq__(self, __value: object) -> bool:
         if isinstance(__value, SineHenonMap):
-            return __value.__a == self.__a and __value.__b == self.__b
+            return __value.__a == self.__a and __value.__b == self.__b and __value.__c == self.__c
 
-        if isinstance(__value, tuple) and len(__value) == 2:
-            return __value[0] == self.__a and __value[1] == self.__b
+        if isinstance(__value, tuple) and len(__value) == 3:
+            return __value[0] == self.__a and __value[1] == self.__b and __value[2] == self.__c
 
         return False
 
     def next(self):
         new_a = (1 - 1.4 * self.__a ** 2 + self.__b +
                  3.75 * np.sin(np.pi * self.__a)/4) * 100 % 1
-        new_b = (0.3 * self.__a)*100 % 1
+        new_b = (0.3 * self.__a + self.__c) * 100 % 1
+        new_c = 3.75/4 * np.sin(np.pi * self.__c)
 
-        return SineHenonMap(new_a, new_b)
+        return SineHenonMap(new_a, new_b, new_c)
 
     def copy(self):
-        return SineHenonMap(self.__a, self.__b)
+        return SineHenonMap(self.__a, self.__b, self.__c)
 
     def get_tuple(self):
-        return (self.__a, self.__b)
+        return (self.__a, self.__b, self.__c)
 
     def get_value(self):
         return self.__a

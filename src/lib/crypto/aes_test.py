@@ -7,10 +7,11 @@ def test_daes():
     cryptogen = SystemRandom()
 
     enc_map = SineHenonMap(cryptogen.random(),
-                           cryptogen.random())
+                           cryptogen.random(), cryptogen.random())
     dec_map = enc_map.copy()
 
-    enc_iv = SineHenonMap(cryptogen.random(), cryptogen.random())
+    enc_iv = SineHenonMap(cryptogen.random(),
+                          cryptogen.random(), cryptogen.random())
     enc_dec = enc_iv.copy()
 
     assert enc_map == dec_map
@@ -35,7 +36,7 @@ def test_daes():
 def test_dmac():
     cryptogen = SystemRandom()
     mac_map = SineHenonMap(cryptogen.random(),
-                           cryptogen.random())
+                           cryptogen.random(), cryptogen.random())
 
     message = cryptogen.randbytes(256)
     dmac = DynamicHMAC(mac_map)
@@ -54,7 +55,7 @@ def test_dmac():
 def test_dmac_failed():
     cryptogen = SystemRandom()
     mac_map = SineHenonMap(cryptogen.random(),
-                           cryptogen.random())
+                           cryptogen.random(), cryptogen.random())
 
     message = cryptogen.randbytes(256)
     dmac = DynamicHMAC(mac_map)
