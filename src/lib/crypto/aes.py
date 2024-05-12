@@ -95,6 +95,7 @@ class DynamicAES(DynamicState, Cipher):
         cipertext = bytearray()
 
         start_state, start_next_chaos = self._get_state()
+        start_ctr = self.__ctr
 
         try:
             for i in range(0, len(data), self.__block_size):
@@ -114,6 +115,7 @@ class DynamicAES(DynamicState, Cipher):
             # Rollback
             self._current_key = start_state
             self._next_chaos = start_next_chaos
+            self.__ctr = start_ctr
             raise e
 
         return bytes(cipertext)
@@ -122,6 +124,7 @@ class DynamicAES(DynamicState, Cipher):
         plaintext = []
 
         start_state, start_next_chaos = self._get_state()
+        start_ctr = self.__ctr
 
         try:
             for i in range(0, len(data), self.__block_size):
@@ -142,6 +145,7 @@ class DynamicAES(DynamicState, Cipher):
             # Rollback
             self._current_key = start_state
             self._next_chaos = start_next_chaos
+            self.__ctr = start_ctr
             raise e
 
         return unpad(bytes(plaintext), 16)
