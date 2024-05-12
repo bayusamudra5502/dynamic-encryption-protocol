@@ -1,9 +1,19 @@
 import numpy as np
 
 
-def to_linear(x):
-    res = np.asarray(((np.array(x)) * 256), dtype=np.uint8)
-    return res
+def to_linear(x, *, size=32):
+    result = 0
+    i = x
+
+    for _ in range(size):
+        result <<= 1
+        i *= 2
+
+        result += int(i)
+
+        i %= 1
+
+    return result
 
 
 def xor(x: bytes, y: bytes) -> bytes:
@@ -30,7 +40,7 @@ def to_bytes_big(x: int, length: int) -> bytes:
         i += 1
 
     result = reversed(result)
-    return bytes(result)
+    return bytes(result)[:length]
 
 
 def to_int_big(x: bytes) -> int:

@@ -38,15 +38,17 @@ class DynamicState:
             self.__current_key, self.__next_chaos = self._generate_bytes(chaos)
 
     def _generate_bytes(self, chaos: CSPRNG, *, length=32) -> tuple[bytes, CSPRNG]:
-        keys = bytearray()
         new_chaos = chaos.copy()
+        key = bytearray()
 
-        for _ in range(length):
-            result = to_linear(new_chaos.get_value())
-            keys.extend(result.tobytes())
+        for _ in range(length//4):
+            result = to_linear(new_chaos.get_value(), size=4 * 8)
+            subkey = to_bytes_big(result, 4)
+            key.extend(subkey)
+
             new_chaos = new_chaos.next()
 
-        return bytes(keys), new_chaos
+        return bytes(key), new_chaos
 
     def _get_current_key(self) -> bytes:
         return self.__current_key
