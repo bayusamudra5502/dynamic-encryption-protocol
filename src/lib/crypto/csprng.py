@@ -21,7 +21,7 @@ class CSPRNG(ABC):
         pass
 
     @abstractmethod
-    def get_value():
+    def get_value() -> float:
         pass
 
 
@@ -170,8 +170,9 @@ class SineHenonMap(CSPRNG):
         return False
 
     def next(self):
-        new_a = (1 - 1.4*math.sin(self.__a * math.pi)**2 + self.__b) * 100 % 1
-        new_b = (0.3 * self.__a) * 100 % 1
+        new_a = (1 - 1.4 * self.__a ** 2 + self.__b +
+                 3.75 * np.sin(np.pi * self.__a)/4) * 100 % 1
+        new_b = (0.3 * self.__a)*100 % 1
 
         return SineHenonMap(new_a, new_b)
 

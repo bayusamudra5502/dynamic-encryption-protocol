@@ -9,21 +9,23 @@ def test_tlsrecord():
     h2 = random_henon()
     m1 = random_henon()
     m2 = random_henon()
+    iv1 = random_henon()
+    iv2 = random_henon()
 
     seqnum = random_start()
 
     alice = TLSApplicationRecordHandler(ProtocolVersion(
         4, 0),
-        DynamicAES(h1, block_size=16),
-        DynamicAES(h2, block_size=16),
+        DynamicAES(h1, block_size=16, iv=iv1),
+        DynamicAES(h2, block_size=16, iv=iv2),
         DynamicHMAC(m1),
         DynamicHMAC(m2),
         sequence_number=seqnum
     )
     bob = TLSApplicationRecordHandler(
         ProtocolVersion(4, 0),
-        DynamicAES(h2),
-        DynamicAES(h1),
+        DynamicAES(h2, iv=iv2),
+        DynamicAES(h1, iv=iv1),
         DynamicHMAC(m2),
         DynamicHMAC(m1),
         sequence_number=seqnum

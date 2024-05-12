@@ -35,13 +35,13 @@ class DynamicState:
 
     def __init__(self, chaos=None) -> None:
         if not chaos is None:
-            self.__current_key, self.__next_chaos = self.__calculate_key(chaos)
+            self.__current_key, self.__next_chaos = self._generate_bytes(chaos)
 
-    def __calculate_key(self, chaos: CSPRNG) -> tuple[bytes, CSPRNG]:
+    def _generate_bytes(self, chaos: CSPRNG, *, length=32) -> tuple[bytes, CSPRNG]:
         keys = bytearray()
         new_chaos = chaos.copy()
 
-        for _ in range(32):
+        for _ in range(length):
             result = to_linear(new_chaos.get_value())
             keys.extend(result.tobytes())
             new_chaos = new_chaos.next()
@@ -52,7 +52,7 @@ class DynamicState:
         return self.__current_key
 
     def rotate(self):
-        self.__current_key, self.__next_chaos = self.__calculate_key(
+        self.__current_key, self.__next_chaos = self._generate_bytes(
             self.__next_chaos)
 
     def _copy(self):
@@ -68,32 +68,39 @@ class DynamicState:
 
 class DynamicAES(DynamicState, Cipher):
     __block_size: bytes
+    __ctr: CSPRNG
 
-    def __init__(self) -> None:
-        pass
-
-    def __init__(self, chaos, *, block_size: int = 16) -> None:
+    def __init__(self, chaos, iv: CSPRNG, *, block_size: int = 16) -> None:
         super().__init__(chaos)
 
         if block_size % 16 != 0:
             raise Exception("block size must be multiply of 16")
 
         self.__block_size = block_size
+        self.__ctr = iv
+
+    def __calculate_ctr(self) -> bytes:
+        val, next = self._generate_bytes(self.__ctr, length=self.__block_size)
+        self.__ctr = next
+
+        return val
 
     def encrypt(self, data: bytes):
         data = pad(data, 16)
-
         cipertext = bytearray()
 
         for i in range(0, len(data), self.__block_size):
             key = self._get_current_key()
             self.rotate()
 
+            ctr = self.__calculate_ctr()
+
             plaintext = data[i:i+self.__block_size]
 
             aes = AES.new(key, AES.MODE_ECB)
-            res = aes.encrypt(plaintext)
+            stream_key = aes.encrypt(ctr)
 
+            res = xor(plaintext, stream_key)
             cipertext.extend(res)
 
         return bytes(cipertext)
@@ -105,12 +112,15 @@ class DynamicAES(DynamicState, Cipher):
             key = self._get_current_key()
             self.rotate()
 
+            ctr = self.__calculate_ctr()
+
             block_data = data[i:i+self.__block_size]
             ciphertext = block_data
 
             aes = AES.new(key, AES.MODE_ECB)
-            res = aes.decrypt(ciphertext)
+            stream_key = aes.encrypt(ctr)
 
+            res = xor(ciphertext, stream_key)
             plaintext.extend(res)
 
         return unpad(bytes(plaintext), 16)

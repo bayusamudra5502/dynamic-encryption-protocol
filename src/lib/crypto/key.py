@@ -26,7 +26,7 @@ def generate_master_secret(pre_master_secret: bytes, client_random: bytes, serve
 
 def generate_chaos_parameter(master_secret: bytes, client_random: bytes, server_random: bytes) -> tuple[DynamicAES, DynamicAES, DynamicHMAC, DynamicHMAC]:
     result = tls_prf(master_secret, b"key expansion",
-                     server_random + client_random, 32 * 8)
+                     server_random + client_random, 32 * 12)
 
     key11 = int.from_bytes(result[:32]) / (2 ** 256)
     key12 = int.from_bytes(result[32:64]) / (2 ** 256)
@@ -40,16 +40,25 @@ def generate_chaos_parameter(master_secret: bytes, client_random: bytes, server_
     key41 = int.from_bytes(result[192:224]) / (2 ** 256)
     key42 = int.from_bytes(result[224:256]) / (2 ** 256)
 
+    key51 = int.from_bytes(result[256:288]) / (2 ** 256)
+    key52 = int.from_bytes(result[288:320]) / (2 ** 256)
+
+    key61 = int.from_bytes(result[320:352]) / (2 ** 256)
+    key62 = int.from_bytes(result[352:384]) / (2 ** 256)
+
     # Participant A chaos system
     c1 = SineHenonMap(key11, key12)
     c2 = SineHenonMap(key21, key22)
+    iv1 = SineHenonMap(key51, key52)
 
     # Participant B chaos system
     c3 = SineHenonMap(key31, key32)
     c4 = SineHenonMap(key41, key42)
+    iv2 = SineHenonMap(key61, key62)
 
-    aes1 = DynamicAES(c1)
-    aes2 = DynamicAES(c3)
+    aes1 = DynamicAES(c1, iv1)
+    aes2 = DynamicAES(c3, iv2)
+
     hmac1 = DynamicHMAC(c2)
     hmac2 = DynamicHMAC(c4)
 

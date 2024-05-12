@@ -10,14 +10,17 @@ def test_daes():
                            cryptogen.random())
     dec_map = enc_map.copy()
 
+    enc_iv = SineHenonMap(cryptogen.random(), cryptogen.random())
+    enc_dec = enc_iv.copy()
+
     assert enc_map == dec_map
 
     message = b"A" * 256
-    daes_enc = DynamicAES(enc_map, block_size=16)
+    daes_enc = DynamicAES(enc_map, block_size=16, iv=enc_iv)
 
     ct1 = daes_enc.encrypt(message)
 
-    daes_dec = DynamicAES(dec_map, block_size=16)
+    daes_dec = DynamicAES(dec_map, block_size=16, iv=enc_dec)
     pt1 = daes_dec.decrypt(ct1)
 
     assert pt1 == message
