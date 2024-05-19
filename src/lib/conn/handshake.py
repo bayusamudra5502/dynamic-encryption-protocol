@@ -14,6 +14,7 @@ from lib.data.cipherspec import ChangeCipherSpec
 from lib.crypto.key import generate_master_secret, generate_shared_secret, generate_chaos_parameter
 from lib.data.finish import Finished
 from lib.crypto.key import generate_finished_payload
+from lib.data.alert import Alert, AlertLevel, AlertDescription
 from secrets import compare_digest
 from secrets import randbits
 
@@ -41,11 +42,26 @@ class TLSHandshake(ABC):
             header = self._transport.recv(5)
             record = TLSRecordLayer.parse(header, with_data=False)
 
+            if record.get_content_type() == ContentType.ALERT:
+                data = self._transport.recv(record.get_content_size())
+                alert_data = Alert.parse(data)
+
+                if alert_data.get_alert_description() == AlertDescription.CLOSE_NOTIFY:
+                    raise ConnectionAbortedError(
+                        "Connection closed by peer")
+
+                if alert_data.get_alert_type() == AlertLevel.FATAL:
+                    raise ConnectionAbortedError(
+                        "Connection closed because unexpected error happened")
+
+                continue
+
             if record.get_content_type() == ContentType.CHANGE_CIPHER_SPEC:
                 data = self._transport.recv(record.get_content_size())
                 return ChangeCipherSpec.parse(data)
 
             if record.get_content_type() != ContentType.HANDSHAKE:
+                self._transport.recv(record.get_content_size())
                 continue
 
             data = self._transport.recv(record.get_content_size())
@@ -115,6 +131,15 @@ class ClientHandshake(TLSHandshake):
             elif self._phase == ClientHandshake.Phase.FINISHED:
                 self.finished()
             elif self._phase == ClientHandshake.Phase.FAILED:
+                data = TLSRecordLayer(
+                    self._version,
+                    ContentType.ALERT,
+                    Alert(
+                        alert_type=AlertLevel.FATAL,
+                        alert_description=AlertDescription.HANDSHAKE_FAILURE
+                    )
+                )
+                self._transport.send(data.encode())
                 raise Exception("Handshake failed")
 
     def client_hello(self) -> None:
@@ -155,13 +180,44 @@ class ClientHandshake(TLSHandshake):
         # Verify Certificate
         if self._server_certificate is None:
             # TODO: send alert
+            data = TLSRecordLayer(
+                self._version,
+                ContentType.ALERT,
+                Alert(
+                    alert_type=AlertLevel.FATAL,
+                    alert_description=AlertDescription.NO_CERTIFICATE
+                )
+            )
+            self._transport.send(data.encode())
             self._phase = ClientHandshake.Phase.FAILED
-            return
+            raise Exception("Server Certificate is required")
 
-        if not self.__verify():
-            # TODO: send alert
+        try:
+            if not self.__verify():
+                # TODO: send alert
+                self._phase = ClientHandshake.Phase.FAILED
+                data = TLSRecordLayer(
+                    self._version,
+                    ContentType.ALERT,
+                    Alert(
+                        alert_type=AlertLevel.FATAL,
+                        alert_description=AlertDescription.CERTIFICATE_UNKNOWN
+                    )
+                )
+                self._transport.send(data.encode())
+                return
+        except Exception as e:
             self._phase = ClientHandshake.Phase.FAILED
-            return
+            data = TLSRecordLayer(
+                self._version,
+                ContentType.ALERT,
+                Alert(
+                    alert_type=AlertLevel.FATAL,
+                    alert_description=AlertDescription.BAD_CERTIFICATE
+                )
+            )
+            self._transport.send(data.encode())
+            raise e
 
         self._phase = ClientHandshake.Phase.KEY_EXCHANGE
 
@@ -210,7 +266,16 @@ class ClientHandshake(TLSHandshake):
                 self._server_finished = data
 
         if not self.__validate_server_finished():
-            # TODO: send alert
+            data = TLSRecordLayer(
+                self._version,
+                ContentType.ALERT,
+                Alert(
+                    alert_type=AlertLevel.FATAL,
+                    alert_description=AlertDescription.HANDSHAKE_FAILURE
+                )
+            )
+            self._transport.send(data.encode())
+            self._phase = ClientHandshake.Phase.FAILED
             raise Exception("Server Finished validation failed")
 
         self._phase = ClientHandshake.Phase.ESTABLISHED
@@ -345,6 +410,15 @@ class ServerHandshake(TLSHandshake):
             elif self._phase == ServerHandshake.Phase.FINISHED:
                 self.finished()
             elif self._phase == ServerHandshake.Phase.FAILED:
+                data = TLSRecordLayer(
+                    self._version,
+                    ContentType.ALERT,
+                    Alert(
+                        alert_type=AlertLevel.FATAL,
+                        alert_description=AlertDescription.HANDSHAKE_FAILURE
+                    )
+                )
+                self._transport.send(data.encode())
                 raise Exception("Handshake failed")
 
     def client_hello(self) -> None:
@@ -434,8 +508,17 @@ class ServerHandshake(TLSHandshake):
                 self._client_finished = data
 
         if not self.__generate_finished_and_verify():
-            # TODO: send alert
-            raise Exception("Finished verification failed")
+            data = TLSRecordLayer(
+                self._version,
+                ContentType.ALERT,
+                Alert(
+                    alert_type=AlertLevel.FATAL,
+                    alert_description=AlertDescription.HANDSHAKE_FAILURE
+                )
+            )
+            self._transport.send(data.encode())
+            self._phase = ClientHandshake.Phase.FAILED
+            raise Exception("Server Finished validation failed")
 
         self._phase = ClientHandshake.Phase.FINISHED
 

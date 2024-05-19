@@ -33,6 +33,17 @@ class TLSConnection:
             self.__state: ConnectionState = ConnectionState.ESTABLISHED
             self.__tls_app_handler = tls_handler
 
+    def __del__(self):
+        data = TLSRecordLayer(
+            self.__version,
+            ContentType.ALERT,
+            Alert(
+                alert_type=AlertLevel.FATAL,
+                alert_description=AlertDescription.CLOSE_NOTIFY
+            )
+        )
+        self.__transport.send(data.encode())
+
     def get_state(self) -> ConnectionState:
         return self.__state
 
@@ -88,6 +99,23 @@ class TLSConnection:
                 payload_bytes = self.__transport.recv(payload_size)
 
                 payload = parsed_header
+                Log.debug("Received payload:" + str(payload))
+
+                if payload.get_content_type() == ContentType.ALERT:
+                    payload.set_content(Alert.parse(payload_bytes))
+
+                    Log.debug("Alert received:" + str(payload))
+
+                    if payload.get_content().get_alert_description() == AlertDescription.CLOSE_NOTIFY:
+                        raise ConnectionResetError(
+                            "Connection closed by peer")
+
+                    if payload.get_content().get_alert_type() == AlertLevel.FATAL:
+                        raise ConnectionAbortedError(
+                            "Connection closed because unexpected error happened")
+
+                    continue
+
                 payload.set_content(TLSCiphertext.parse(payload_bytes))
 
                 received = self.__tls_app_handler.unpack(payload)
@@ -95,6 +123,24 @@ class TLSConnection:
                 data += received
                 __waited_size -= len(received)
             except CipherException as err:
+                data = TLSRecordLayer(
+                    self.__version,
+                    ContentType.ALERT,
+                    Alert(
+                        alert_type=AlertLevel.WARNING,
+                        alert_description=AlertDescription.BAD_RECORD_MAC
+                    )
+                )
+                self.__transport.send(data.encode())
+                Log.debug(err)
+                continue
+            except ConnectionAbortedError as err:
+                Log.debug("Aborted " + err)
+                raise err
+            except ConnectionResetError as err:
+                Log.debug(err)
+                raise err
+            except Exception as err:
                 Log.debug(err)
                 continue
 

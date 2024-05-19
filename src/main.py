@@ -71,16 +71,23 @@ def server(listen_addr: str, port: int):
     assert key is not None
 
     def handler(transport: Transport, _: socket.socket, addr: tuple):
-        print(f"Connection from {addr}")
-        conn = TLSConnection(transport, is_server=True,
-                             certificates=[cert], private_key=key)
-        print(f"Session id: {conn.get_session_id()}")
+        try:
+            print(f"Connection from {addr}")
+            conn = TLSConnection(transport, is_server=True,
+                                 certificates=[cert], private_key=key)
+            print(f"Session id: {conn.get_session_id()}")
 
-        while True:
-            data = receive(conn)
+            while True:
+                data = receive(conn)
 
-            print(f"Received: {data}")
-            send(conn, b"From server: " + data)
+                print(f"Received: {data}")
+                send(conn, b"From server: " + data)
+        except ConnectionResetError:
+            print(f"Connection from {addr} closed")
+        except ConnectionAbortedError:
+            print(f"Connection from {addr} closed")
+        except Exception as e:
+            raise e
 
     tcp = TCPServer(listen_addr, port, handler)
 
