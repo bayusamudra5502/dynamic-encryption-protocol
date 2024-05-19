@@ -9,3 +9,7 @@ class Transport(ABC):
     @abstractmethod
     def recv(self, size: int) -> bytes:
         pass
+
+    @abstractmethod
+    def close(self) -> None:
+        pass

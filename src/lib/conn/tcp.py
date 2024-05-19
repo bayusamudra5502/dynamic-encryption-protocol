@@ -46,6 +46,9 @@ class TCP(Transport):
     def recv(self, size: int) -> bytes:
         return self.__socket.recv(size)
 
+    def close(self) -> None:
+        self.__socket.close()
+
 
 class TCPClient(TCP):
     def __init__(self, host_address: str, port: int) -> None:

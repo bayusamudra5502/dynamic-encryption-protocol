@@ -31,6 +31,9 @@ class Socket(Transport):
     def recv(self, size: int) -> bytes:
         return self.__socket.recv(size)
 
+    def close(self) -> None:
+        self.__socket.close()
+
 
 class SocketClient(Socket):
     def __init__(self, path: str) -> None:

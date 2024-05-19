@@ -19,6 +19,7 @@ class TLSConnection:
     __private_key: ec.EllipticCurvePrivateKey = None
     __version: ProtocolVersion = None
     __session_id: int = None
+    __closed_by_peer: bool = False
 
     def __init__(self, transport: Transport, *, tls_handler: TLSApplicationRecordHandler = None, is_server=False, certificates: list[Certificate] = [], version=ProtocolVersion(3, 3), private_key: ec.EllipticCurvePrivateKey = None) -> None:
         self.__transport = transport
@@ -34,15 +35,18 @@ class TLSConnection:
             self.__tls_app_handler = tls_handler
 
     def __del__(self):
-        data = TLSRecordLayer(
-            self.__version,
-            ContentType.ALERT,
-            Alert(
-                alert_type=AlertLevel.FATAL,
-                alert_description=AlertDescription.CLOSE_NOTIFY
+        if not self.__closed_by_peer:
+            data = TLSRecordLayer(
+                self.__version,
+                ContentType.ALERT,
+                Alert(
+                    alert_type=AlertLevel.FATAL,
+                    alert_description=AlertDescription.CLOSE_NOTIFY
+                )
             )
-        )
-        self.__transport.send(data.encode())
+            self.__transport.send(data.encode())
+
+        self.__transport.close()
 
     def get_state(self) -> ConnectionState:
         return self.__state
@@ -107,10 +111,12 @@ class TLSConnection:
                     Log.debug("Alert received:" + str(payload))
 
                     if payload.get_content().get_alert_description() == AlertDescription.CLOSE_NOTIFY:
+                        self.__closed_by_peer = True
                         raise ConnectionResetError(
                             "Connection closed by peer")
 
                     if payload.get_content().get_alert_type() == AlertLevel.FATAL:
+                        self.__closed_by_peer = True
                         raise ConnectionAbortedError(
                             "Connection closed because unexpected error happened")
 
