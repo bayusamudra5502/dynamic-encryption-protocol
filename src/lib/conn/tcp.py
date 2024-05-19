@@ -9,7 +9,7 @@ class TCPServer:
         self.__host = listen_address
         self.__port = port
         self.__handler = handler
-        self.__process = []
+        self.__process: list[mp.Process] = []
         self.__process_lock = mp.Lock()
 
     def start(self):
@@ -30,6 +30,9 @@ class TCPServer:
                             process.start()
                     except Exception as err:
                         Log.error(err)
+            except KeyboardInterrupt:
+                for i in self.__process:
+                    i.kill()
             finally:
                 for i in self.__process:
                     i.join()
