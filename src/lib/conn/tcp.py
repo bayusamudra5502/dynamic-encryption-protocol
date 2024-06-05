@@ -39,15 +39,39 @@ class TCPServer:
                 s.close()
 
 
+MAX_SIZE = 1024
+
+
 class TCP(Transport):
     def __init__(self, socket: socket.socket) -> None:
         self.__socket = socket
 
     def send(self, data: bytes) -> bytes:
-        self.__socket.sendall(data)
+        sent_data = 0
+
+        while sent_data < len(data):
+            send_size = min(len(data) - sent_data, MAX_SIZE)
+            result = self.__socket.send(
+                data[sent_data:sent_data + send_size]
+            )
+
+            if result == 0:
+                raise RuntimeError("Socket connection broken")
+
+            sent_data += send_size
 
     def recv(self, size: int) -> bytes:
-        return self.__socket.recv(size)
+        buffer = b""
+        buffer_size = 0
+
+        while buffer_size < size:
+            recv_size = min(size - buffer_size, MAX_SIZE)
+            data = self.__socket.recv(recv_size)
+
+            buffer += data
+            buffer_size += len(data)
+
+        return buffer
 
     def close(self) -> None:
         self.__socket.close()

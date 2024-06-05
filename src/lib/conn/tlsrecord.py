@@ -43,6 +43,8 @@ class TLSApplicationRecordHandler:
             struct.pack(">H", len(data)) +\
             data
 
+        print(self.__sequence_number, len(mac_data), hex(
+            to_int_big(record.get_content().get_mac())))
         self.__write_server_mac.verify(
             mac_data, record.get_content().get_mac())
         self.__sequence_number = (sequence_number + 1) % MODULO_SIZE
@@ -62,6 +64,7 @@ class TLSApplicationRecordHandler:
             payload
         )
 
+        print(self.__sequence_number, len(enc_data), hex(to_int_big(mac)))
         self.__sequence_number = (sequence_number + 1) % MODULO_SIZE
 
         return TLSRecordLayer(

@@ -100,3 +100,40 @@ def test_dmac_failed():
         assert False
     except CipherException:
         assert True
+
+
+def test_mac():
+    cryptogen = SystemRandom()
+
+    message = cryptogen.randbytes(256)
+    key = cryptogen.randbytes(32)
+
+    mac = TLSHMAC(key)
+    mac_verify = TLSHMAC(key)
+
+    result1 = mac.generate(message)
+    assert mac_verify.verify(message, result1)
+    mac_verify.rotate()
+
+    result2 = mac.generate(message)
+
+    assert mac_verify.verify(message, result2)
+    mac_verify.rotate()
+
+
+def test_mac_failed():
+    cryptogen = SystemRandom()
+
+    message = cryptogen.randbytes(256)
+    mac = TLSHMAC(cryptogen.randbytes(32))
+
+    result = mac.generate(message)
+    message += b"0"
+
+    try:
+        assert mac.verify(message, result)
+        mac.rotate()
+
+        assert False
+    except CipherException:
+        assert True

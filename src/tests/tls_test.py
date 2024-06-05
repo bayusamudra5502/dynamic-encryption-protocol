@@ -46,11 +46,11 @@ def test_tc_2_1():
     server_params = server_queue.get()
 
     assert server_params[:2] == client_params[:2]
-    assert server_params[2]._get_state() == client_params[3]._get_state()
-    assert server_params[3]._get_state() == client_params[2]._get_state()
+    assert server_params[2] == client_params[3]
+    assert server_params[3] == client_params[2]
 
-    assert server_params[4]._get_state() == client_params[5]._get_state()
-    assert server_params[5]._get_state() == client_params[4]._get_state()
+    assert server_params[4] == client_params[5]
+    assert server_params[5] == client_params[4]
 
 
 def test_tc_2_2():

@@ -5,6 +5,7 @@ from lib.crypto.csprng import CSPRNG
 from Crypto.Util.Padding import pad, unpad
 from lib.exception.CipherException import CipherException
 from abc import ABC, abstractmethod
+from secrets import compare_digest
 
 MAC_SIZE = 32
 
@@ -99,8 +100,6 @@ class DynamicAES(DynamicState, Cipher):
 
         try:
             for i in range(0, len(data), self.__block_size):
-                if i % 100_000 == 0:
-                    print(f"Progress: {i}/{len(data)}")
 
                 key = self._get_current_key()
                 self.rotate()
@@ -176,9 +175,6 @@ class DynamicAESCBC(DynamicState, Cipher):
 
         try:
             for i in range(0, len(data), self.__block_size):
-                if i % 100_000 == 0:
-                    print(f"Progress: {i}/{len(data)}")
-
                 key = self._get_current_key()
                 self.rotate()
 
@@ -246,16 +242,34 @@ class DynamicHMAC(DynamicState, MAC):
         return result
 
     def verify(self, data: bytes, mac: bytes) -> bool:
-        if mac != self.__generate(data):
+        if not compare_digest(mac, self.__generate(data)):
             raise CipherException("MAC verification failed")
 
         return True
 
 
-class HMAC(MAC):
+class TLSHMAC(MAC):
     def __init__(self, key: bytes) -> None:
+        if not isinstance(key, bytes):
+            raise CipherException("Key must be bytes")
+
         self.__key = key
 
     def generate(self, data: bytes) -> bytes:
         hmac = HMAC.new(self.__key, data, digestmod=SHA256)
         return hmac.digest()
+
+    def verify(self, data: bytes, mac: bytes) -> bool:
+        result = self.generate(data)
+
+        if not compare_digest(result, mac):
+            raise CipherException("MAC verification failed")
+
+        return True
+
+    def rotate(self):
+        # Backward compatibility
+        pass
+
+    def __eq__(self, value: object) -> bool:
+        return compare_digest(self.__key, value.__key)
