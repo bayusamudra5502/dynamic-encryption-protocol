@@ -9,10 +9,13 @@ class SingleSocketServer:
         self.__path = path
         self.__handler = handler
 
-    def start(self):
+    def start(self, on_started=None):
         with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as s:
             s.bind(self.__path)
             s.listen()
+
+            if on_started is not None and callable(on_started):
+                on_started()
 
             try:
                 conn, addr = s.accept()

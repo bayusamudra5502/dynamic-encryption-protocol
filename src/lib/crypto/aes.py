@@ -99,6 +99,9 @@ class DynamicAES(DynamicState, Cipher):
 
         try:
             for i in range(0, len(data), self.__block_size):
+                if i % 100_000 == 0:
+                    print(f"Progress: {i}/{len(data)}")
+
                 key = self._get_current_key()
                 self.rotate()
 
@@ -151,6 +154,82 @@ class DynamicAES(DynamicState, Cipher):
         return unpad(bytes(plaintext), 16)
 
 
+class DynamicAESCBC(DynamicState, Cipher):
+    __block_size: bytes
+    __last_block: CSPRNG
+
+    def __init__(self, chaos, iv: bytes, *, block_size: int = 16) -> None:
+        super().__init__(chaos)
+
+        if block_size % 16 != 0:
+            raise Exception("block size must be multiply of 16")
+
+        self.__block_size = block_size
+        self.__last_block = iv
+
+    def encrypt(self, data: bytes):
+        data = pad(data, 16)
+        cipertext = bytearray()
+
+        start_state, start_next_chaos = self._get_state()
+        start_iv = self.__last_block
+
+        try:
+            for i in range(0, len(data), self.__block_size):
+                if i % 100_000 == 0:
+                    print(f"Progress: {i}/{len(data)}")
+
+                key = self._get_current_key()
+                self.rotate()
+
+                plaintext = data[i:i+self.__block_size]
+
+                aes = AES.new(key, AES.MODE_ECB)
+                xored_pt = xor(plaintext, self.__last_block)
+
+                encrypted = aes.encrypt(xored_pt)
+                cipertext.extend(encrypted)
+                self.__last_block = encrypted
+        except Exception as e:
+            # Rollback
+            self._current_key = start_state
+            self._next_chaos = start_next_chaos
+            self.__last_block = start_iv
+            raise e
+
+        return bytes(cipertext)
+
+    def decrypt(self, data: bytes):
+        plaintext = []
+
+        start_state, start_next_chaos = self._get_state()
+        start_iv = self.__last_block
+
+        try:
+            for i in range(0, len(data), self.__block_size):
+                key = self._get_current_key()
+                self.rotate()
+
+                block_data = data[i:i+self.__block_size]
+                ciphertext = block_data
+
+                aes = AES.new(key, AES.MODE_ECB)
+                decrypted = aes.decrypt(ciphertext)
+
+                res = xor(decrypted, self.__last_block)
+                self.__last_block = block_data
+
+                plaintext.extend(res)
+        except Exception as e:
+            # Rollback
+            self._current_key = start_state
+            self._next_chaos = start_next_chaos
+            self.__last_block = start_iv
+            raise e
+
+        return unpad(bytes(plaintext), 16)
+
+
 class DynamicHMAC(DynamicState, MAC):
     def __init__(self, chaos) -> None:
         super().__init__(chaos)
@@ -171,3 +250,12 @@ class DynamicHMAC(DynamicState, MAC):
             raise CipherException("MAC verification failed")
 
         return True
+
+
+class HMAC(MAC):
+    def __init__(self, key: bytes) -> None:
+        self.__key = key
+
+    def generate(self, data: bytes) -> bytes:
+        hmac = HMAC.new(self.__key, data, digestmod=SHA256)
+        return hmac.digest()

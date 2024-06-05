@@ -12,7 +12,7 @@ class ConnectionState:
     ESTABLISHED = 1
 
 
-class TLSConnection:
+class TLSConnection(Transport):
     __transport: Transport = None
     __tls_app_handler: TLSApplicationRecordHandler = None
     __certificates: list[Certificate] = []
@@ -20,33 +20,25 @@ class TLSConnection:
     __version: ProtocolVersion = None
     __session_id: int = None
     __closed_by_peer: bool = False
+    __is_closed = False
 
     def __init__(self, transport: Transport, *, tls_handler: TLSApplicationRecordHandler = None, is_server=False, certificates: list[Certificate] = [], version=ProtocolVersion(3, 3), private_key: ec.EllipticCurvePrivateKey = None) -> None:
         self.__transport = transport
         self.__certificates = certificates
         self.__version = version
         self.__private_key = private_key
+        self.__is_server = is_server
 
         if tls_handler is None:
             self.__state = ConnectionState.HANDSHAKE
-            self.handshake(is_server)
+            self.handshake(self.__is_server)
         else:
             self.__state: ConnectionState = ConnectionState.ESTABLISHED
             self.__tls_app_handler = tls_handler
 
     def __del__(self):
-        if not self.__closed_by_peer:
-            data = TLSRecordLayer(
-                self.__version,
-                ContentType.ALERT,
-                Alert(
-                    alert_type=AlertLevel.FATAL,
-                    alert_description=AlertDescription.CLOSE_NOTIFY
-                )
-            )
-            self.__transport.send(data.encode())
-
-        self.__transport.close()
+        if not self.__is_closed:
+            self.close()
 
     def get_state(self) -> ConnectionState:
         return self.__state
@@ -118,7 +110,7 @@ class TLSConnection:
                     if payload.get_content().get_alert_type() == AlertLevel.FATAL:
                         self.__closed_by_peer = True
                         raise ConnectionAbortedError(
-                            "Connection closed because unexpected error happened")
+                            "Connection closed because unexpected error happened", payload)
 
                     continue
 
@@ -152,3 +144,25 @@ class TLSConnection:
 
         self.__buffered_data = data[size:]
         return data[:size]
+
+    def close(self) -> None:
+        if self.__is_closed:
+            return
+
+        if not self.__closed_by_peer:
+            data = TLSRecordLayer(
+                self.__version,
+                ContentType.ALERT,
+                Alert(
+                    alert_type=AlertLevel.FATAL,
+                    alert_description=AlertDescription.CLOSE_NOTIFY
+                )
+            )
+            self.__transport.send(data.encode())
+        else:
+            self.__transport.close()
+
+        self.__is_closed = True
+
+    def _get_tls_application_handler(self) -> TLSApplicationRecordHandler:
+        return self.__tls_app_handler

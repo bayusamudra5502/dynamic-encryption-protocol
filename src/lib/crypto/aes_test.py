@@ -1,6 +1,7 @@
 from lib.crypto.csprng import *
 from random import SystemRandom
 from lib.crypto.aes import *
+import os
 
 
 def test_daes():
@@ -22,6 +23,34 @@ def test_daes():
     ct1 = daes_enc.encrypt(message)
 
     daes_dec = DynamicAES(dec_map, block_size=16, iv=enc_dec)
+    pt1 = daes_dec.decrypt(ct1)
+
+    assert pt1 == message
+
+    ct2 = daes_enc.encrypt(message)
+    assert ct1 != ct2
+
+    pt2 = daes_dec.decrypt(ct2)
+    assert pt2 == message
+
+
+def test_daes_cbc():
+    cryptogen = SystemRandom()
+
+    enc_map = SineHenonMap(cryptogen.random(),
+                           cryptogen.random(), cryptogen.random())
+    dec_map = enc_map.copy()
+
+    iv = os.urandom(16)
+
+    assert enc_map == dec_map
+
+    message = b"A" * 256
+    daes_enc = DynamicAESCBC(enc_map, block_size=16, iv=iv)
+
+    ct1 = daes_enc.encrypt(message)
+
+    daes_dec = DynamicAESCBC(dec_map, block_size=16, iv=iv)
     pt1 = daes_dec.decrypt(ct1)
 
     assert pt1 == message

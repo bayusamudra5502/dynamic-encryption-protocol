@@ -276,6 +276,8 @@ def test_handshake_integration():
     server_res = queue.Queue()
     client_res = None
 
+    semaphore = threading.Semaphore(0)
+
     def handler(socket, conn, addr):
         server = ServerHandshake(VERSION_TLS_12, socket, [cert], key)
         server.run()
@@ -284,12 +286,12 @@ def test_handshake_integration():
 
     def start_server():
         ss = SingleSocketServer(socket_path, handler)
-        ss.start()
+        ss.start(semaphore.release)
 
     p = threading.Thread(target=start_server)
     p.start()
 
-    time.sleep(1)
+    semaphore.acquire()
 
     client = ClientHandshake(VERSION_TLS_12, SocketClient(socket_path))
     client.run()

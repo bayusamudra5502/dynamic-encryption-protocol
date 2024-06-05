@@ -3,7 +3,7 @@ import numpy as np
 
 def to_linear(x, *, size=32):
     result = 0
-    i = x
+    i = x % 1
 
     for _ in range(size):
         result <<= 1

@@ -154,10 +154,14 @@ class SineHenonMap(CSPRNG):
     __b: float
     __c: float
 
-    def __init__(self, a, b, c) -> None:
+    def __init__(self, a, b, c, *, p1=1, p2=-1.4, p3=0.3, p4=3.75) -> None:
         self.__a = a
         self.__b = b
         self.__c = c
+        self.__p1 = p1
+        self.__p2 = p2
+        self.__p3 = p3
+        self.__p4 = p4
 
     def __str__(self) -> str:
         return f"({self.__a}, {self.__b})"
@@ -172,10 +176,10 @@ class SineHenonMap(CSPRNG):
         return False
 
     def next(self):
-        new_a = (1 - 1.4 * self.__a ** 2 + self.__b +
-                 3.75 * np.sin(np.pi * self.__a)/4) * 100 % 1
-        new_b = (0.3 * self.__a + self.__c) * 100 % 1
-        new_c = 3.75/4 * np.sin(np.pi * self.__c)
+        new_a = (self.__p1 + self.__p2 * self.__a **
+                 2 + self.__b + self.__c) * 100 % 1
+        new_b = (self.__p3 * self.__a) * 100 % 1
+        new_c = self.__p4/4 * np.sin(np.pi * self.__c)
 
         return SineHenonMap(new_a, new_b, new_c)
 

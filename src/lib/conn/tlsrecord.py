@@ -69,3 +69,6 @@ class TLSApplicationRecordHandler:
             content_type=ContentType.APPLICATION_DATA,
             data=TLSCiphertext(enc_data, mac)
         )
+
+    def _get_params(self):
+        return self.__version, self.__sequence_number, self.__write_server_aes, self.__write_client_aes, self.__write_server_mac, self.__write_client_mac
