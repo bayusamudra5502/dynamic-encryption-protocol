@@ -22,7 +22,7 @@ class TLSConnection(Transport):
     __closed_by_peer: bool = False
     __is_closed = False
 
-    def __init__(self, transport: Transport, *, tls_handler: TLSApplicationRecordHandler = None, is_server=False, certificates: list[Certificate] = [], version=ProtocolVersion(3, 3), private_key: ec.EllipticCurvePrivateKey = None) -> None:
+    def __init__(self, transport: Transport, *, tls_handler: TLSApplicationRecordHandler = None, is_server=False, certificates: list[Certificate] = [], version=ProtocolVersion(3, 3), private_key: ec.EllipticCurvePrivateKey = None, manual_handshake=False) -> None:
         self.__transport = transport
         self.__certificates = certificates
         self.__version = version
@@ -31,7 +31,8 @@ class TLSConnection(Transport):
 
         if tls_handler is None:
             self.__state = ConnectionState.HANDSHAKE
-            self.handshake(self.__is_server)
+            if not manual_handshake:
+                self.handshake(self.__is_server)
         else:
             self.__state: ConnectionState = ConnectionState.ESTABLISHED
             self.__tls_app_handler = tls_handler
@@ -121,7 +122,7 @@ class TLSConnection(Transport):
                 data += received
                 __waited_size -= len(received)
             except CipherException as err:
-                data = TLSRecordLayer(
+                err_data = TLSRecordLayer(
                     self.__version,
                     ContentType.ALERT,
                     Alert(
@@ -129,7 +130,7 @@ class TLSConnection(Transport):
                         alert_description=AlertDescription.BAD_RECORD_MAC
                     )
                 )
-                self.__transport.send(data.encode())
+                self.__transport.send(err_data.encode())
                 Log.debug(err)
                 continue
             except ConnectionAbortedError as err:

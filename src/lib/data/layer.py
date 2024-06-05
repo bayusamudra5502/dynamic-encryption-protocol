@@ -3,6 +3,7 @@ from lib.crypto.aes import MAC_SIZE
 from lib.data.text import *
 from lib.data.handshake import Handshake
 from lib.data.cipherspec import ChangeCipherSpec
+from lib.data.alert import Alert
 
 
 class TLSRecordLayer:
@@ -46,6 +47,9 @@ class TLSRecordLayer:
     def set_content(self, content: TLSPayload) -> None:
         self.__content = content
 
+    def copy(self) -> 'TLSRecordLayer':
+        return TLSRecordLayer(self.__version, self.__content_type, self.__content, content_size=self.__content_size)
+
     @staticmethod
     def parse(data: bytes, *, mac_size=MAC_SIZE, with_data=True) -> 'TLSRecordLayer':
         content_type = data[0:1]
@@ -61,6 +65,8 @@ class TLSRecordLayer:
                 data = Handshake.parse(data=data[5:])
             elif content_type == ContentType.CHANGE_CIPHER_SPEC:
                 data = ChangeCipherSpec.parse(data=data[5:])
+            elif content_type == ContentType.ALERT:
+                data = Alert.parse(data=data[5:])
             else:
                 raise Exception("Unknown content type " + content_type)
 

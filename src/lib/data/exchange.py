@@ -43,6 +43,12 @@ class ECPoint(TLSPayload):
 
         return load_der_public_key(magic + x + y)
 
+    def get_x(self) -> int:
+        return self.__x
+
+    def get_y(self) -> int:
+        return self.__y
+
 
 class ECCurveType:
     NAMED_CURVE = b"\x03"
@@ -103,6 +109,12 @@ class ECDHParameter(TLSPayload):
 
     def get_public_key(self) -> ec.EllipticCurvePublicKey:
         return self.__public.get_public_key()
+
+    def get_curve_params(self):
+        return self.__curve_params
+
+    def get_public(self):
+        return self.__public
 
 
 class KeyExchange(TLSPayload):

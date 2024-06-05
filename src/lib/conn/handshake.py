@@ -201,7 +201,7 @@ class ClientHandshake(TLSHandshake):
                     ContentType.ALERT,
                     Alert(
                         alert_type=AlertLevel.FATAL,
-                        alert_description=AlertDescription.CERTIFICATE_UNKNOWN
+                        alert_description=AlertDescription.HANDSHAKE_FAILURE
                     )
                 )
                 self._transport.send(data.encode())
@@ -321,7 +321,6 @@ class ClientHandshake(TLSHandshake):
         tls_cert: TLSCertificate = self._server_certificate.get_payload()
         certificates = tls_cert.get_certificates()
 
-        # TODO: Trust Ancor test
         server_cert_pk = certificates[0].public_key()
         server_exchange: ServerKeyExchange = self._server_key_exchange.get_payload()
 

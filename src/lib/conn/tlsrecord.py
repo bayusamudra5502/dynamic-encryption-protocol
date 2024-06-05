@@ -1,6 +1,7 @@
 from lib.data.common import *
 from lib.data.layer import *
 from lib.crypto.aes import *
+from lib.log import Log
 
 MODULO_SIZE = 2**64
 
@@ -43,8 +44,8 @@ class TLSApplicationRecordHandler:
             struct.pack(">H", len(data)) +\
             data
 
-        print(self.__sequence_number, len(mac_data), hex(
-            to_int_big(record.get_content().get_mac())))
+        Log.debug(f"unpack: {self.__sequence_number} {len(mac_data)} {
+                  hex(to_int_big(record.get_content().get_mac()))}")
         self.__write_server_mac.verify(
             mac_data, record.get_content().get_mac())
         self.__sequence_number = (sequence_number + 1) % MODULO_SIZE
@@ -64,7 +65,8 @@ class TLSApplicationRecordHandler:
             payload
         )
 
-        print(self.__sequence_number, len(enc_data), hex(to_int_big(mac)))
+        Log.debug(f"pack: {self.__sequence_number} {
+            len(enc_data)} {hex(to_int_big(mac))}")
         self.__sequence_number = (sequence_number + 1) % MODULO_SIZE
 
         return TLSRecordLayer(

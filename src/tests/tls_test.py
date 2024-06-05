@@ -1,11 +1,12 @@
 from lib.conn.memory import MemoryTransport
 from lib.conn.socket import SocketClient, SingleSocketServer
 from lib.crypto.csprng import *
-from lib.conn.tls import TLSConnection
+from lib.conn.tls import *
 from tests.lib import *
 
+from uuid import uuid4
+
 import multiprocessing
-import threading
 import random
 
 
@@ -171,3 +172,45 @@ def test_tc_2_3():
         client.recv(1)
     except ConnectionResetError as e:
         pass
+
+
+def test_tc_2_5():
+    cert, _ = generate_certificate_and_key()
+    _, key = generate_certificate_and_key()
+
+    socket_path = "/tmp/"+uuid4().hex
+    semaphore = multiprocessing.Semaphore(0)
+
+    server_recv_queue = multiprocessing.Queue()
+    server_send_queue = multiprocessing.Queue()
+
+    def handler(socket, conn, addr):
+        server = TLSConnection(socket, is_server=True,
+                               certificates=[cert], private_key=key)
+
+        for _ in range(5):
+            data = server.recv(1024)
+            server_recv_queue.put(data)
+
+        for _ in range(5):
+            data = random.randbytes(1024)
+            server.send(data)
+            server_send_queue.put(data)
+
+        server.close()
+
+    def start_server():
+        ss = SingleSocketServer(socket_path, handler)
+        ss.start(semaphore.release)
+
+    p = multiprocessing.Process(target=start_server)
+    p.start()
+
+    try:
+        TLSConnection(SocketClient(socket_path),
+                      certificates=[cert], is_server=False)
+        assert False
+    except Exception as e:
+        pass
+
+    p.terminate()
