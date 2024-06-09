@@ -16,7 +16,17 @@ def test_tc1_2():
 
     assert enc_map == dec_map
 
-    message = b"A" * 256
+    message = SystemRandom().randbytes(250)
+    daes_enc = DynamicAES(enc_map, block_size=16, iv=enc_iv)
+
+    ct1 = daes_enc.encrypt(message)
+
+    daes_dec = DynamicAES(dec_map, block_size=16, iv=enc_dec)
+    pt1 = daes_dec.decrypt(ct1)
+
+    assert pt1 == message
+
+    message = SystemRandom().randbytes(256)
     daes_enc = DynamicAES(enc_map, block_size=16, iv=enc_iv)
 
     ct1 = daes_enc.encrypt(message)
@@ -40,7 +50,7 @@ def test_tc1_4():
 
     assert enc_map == dec_map
 
-    message = b"A" * 256
+    message = SystemRandom().randbytes(250)
     daes_enc = DynamicAES(enc_map, block_size=16, iv=enc_iv)
 
     ct1 = daes_enc.encrypt(message)

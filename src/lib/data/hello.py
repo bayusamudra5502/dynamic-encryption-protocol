@@ -145,6 +145,18 @@ class ClientHello(TLSPayload):
     def get_session_id(self) -> int:
         return self.__session_id
 
+    def get_cipher_suites(self) -> list[int]:
+        return self.__cipher_suites
+
+    def get_compression_methods(self) -> list[int]:
+        return self.__compression_methods
+
+    def get_extensions(self) -> int | None:
+        return self.__extensions
+
+    def get_version(self) -> ProtocolVersion:
+        return self.__version
+
 
 class ServerHello(TLSPayload):
     __version: ProtocolVersion = None
@@ -223,6 +235,18 @@ class ServerHello(TLSPayload):
 
     def get_session_id(self) -> int:
         return self.__session_id
+
+    def get_cipher_suite(self) -> int:
+        return self.__cipher_suite
+
+    def get_compression_method(self) -> int:
+        return self.__compression_method
+
+    def get_extensions(self) -> int | None:
+        return self.__extensions
+
+    def get_version(self) -> ProtocolVersion:
+        return self.__version
 
 
 class ServerHelloDone(TLSPayload):
