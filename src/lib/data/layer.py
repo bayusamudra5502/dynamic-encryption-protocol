@@ -58,7 +58,7 @@ class TLSRecordLayer:
 
         if with_data:
             if content_type == ContentType.APPLICATION_DATA:
-                data = TLSCiphertext.parse(data=data[5:], mac_size=mac_size)
+                data = TLSCiphertext.parse(data=data[5:])
                 if data.length() != content_size:
                     raise ValueError("content size does not match data size")
             elif content_type == ContentType.HANDSHAKE:

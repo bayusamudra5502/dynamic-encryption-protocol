@@ -35,44 +35,52 @@ class TLSApplicationRecordHandler:
 
     def unpack(self, record: TLSRecordLayer) -> bytes:
         data = record.get_content().get_data()
+        state_copy = self.__write_server_aes.copy()
+
+        try:
+            dec_data = self.__write_server_aes.decrypt(data)
+        except ValueError as e:
+            self.__write_server_aes = state_copy
+            raise CipherException("Decryption failed: " + str(e))
+
+        mac = dec_data[-MAC_SIZE:]
+        payload = dec_data[:-MAC_SIZE]
 
         sequence_number = self.__sequence_number
 
         mac_data = struct.pack(">Q", sequence_number) +\
             ContentType.APPLICATION_DATA +\
             self.__version.encode() +\
-            struct.pack(">H", len(data)) +\
-            data
+            struct.pack(">H", len(payload)) +\
+            payload
 
-        Log.debug(f"unpack: {self.__sequence_number} {len(mac_data)} {
-                  hex(to_int_big(record.get_content().get_mac()))}")
-        self.__write_server_mac.verify(
-            mac_data, record.get_content().get_mac())
+        try:
+            self.__write_server_mac.verify(
+                mac_data, mac)
+        except CipherException as e:
+            self.__write_server_aes = state_copy
+            raise CipherException("MAC verification failed: " + str(e))
+
         self.__sequence_number = (sequence_number + 1) % MODULO_SIZE
 
-        dec_data = self.__write_server_aes.decrypt(data)
         self.__write_server_mac.rotate()
 
-        return dec_data
+        return payload
 
     def pack(self, data: bytes) -> TLSRecordLayer:
-        enc_data = self.__write_client_aes.encrypt(data)
         sequence_number = self.__sequence_number
+        mac_payload = struct.pack(">Q", sequence_number) + ContentType.APPLICATION_DATA + \
+            self.__version.encode() + struct.pack(">H", len(data)) + data
+        mac = self.__write_client_mac.generate(mac_payload)
 
-        payload = struct.pack(">Q", sequence_number) + ContentType.APPLICATION_DATA + \
-            self.__version.encode() + struct.pack(">H", len(enc_data)) + enc_data
-        mac = self.__write_client_mac.generate(
-            payload
-        )
+        enc_data = self.__write_client_aes.encrypt(data + mac)
 
-        Log.debug(f"pack: {self.__sequence_number} {
-            len(enc_data)} {hex(to_int_big(mac))}")
         self.__sequence_number = (sequence_number + 1) % MODULO_SIZE
 
         return TLSRecordLayer(
             version=self.__version,
             content_type=ContentType.APPLICATION_DATA,
-            data=TLSCiphertext(enc_data, mac)
+            data=TLSCiphertext(enc_data),
         )
 
     def _get_params(self):

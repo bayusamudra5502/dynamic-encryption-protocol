@@ -276,8 +276,11 @@ class ClientHandshake(TLSHandshake):
             self._client_finished
         )
 
-        self._transport.send(client_exchange.encode(
-        ) + change_cipher_spec.encode() + client_finished.encode())
+        self._transport.send(
+            client_exchange.encode() +
+            change_cipher_spec.encode() +
+            client_finished.encode()
+        )
 
         self._phase = ClientHandshake.Phase.FINISHED
 

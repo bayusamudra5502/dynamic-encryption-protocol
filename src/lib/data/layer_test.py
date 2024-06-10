@@ -3,12 +3,10 @@ from lib.data.text import TLSCiphertext
 
 
 def test_parse():
-    data = b"\x17\x01\x02\x00\x14BACA\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
-    result = TLSRecordLayer.parse(data, mac_size=16)
+    data = b"\x17\x01\x02\x00\x04BACA"
+    result = TLSRecordLayer.parse(data)
 
     assert result.get_content().get_data() == b"BACA"
-    assert result.get_content().get_mac(
-    ) == b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
     assert result.get_version() == ProtocolVersion(1, 2)
     assert result.get_content_type() == b"\x17"
 
@@ -18,11 +16,11 @@ def test_encode():
         ProtocolVersion(1, 2),
         b"\x17",
         TLSCiphertext(
-            b"BACA", b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00")
+            b"BACA")
     )
     result = layer.encode()
 
-    assert result == b"\x17\x01\x02\x00\x10BACA\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+    assert result == b"\x17\x01\x02\x00\x04BACA"
 
 
 def test_parse_headonly():

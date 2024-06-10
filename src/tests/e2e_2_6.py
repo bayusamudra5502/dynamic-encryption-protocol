@@ -72,12 +72,12 @@ def test_tc_2_6():
 
             intercepted = mitm.get_intercepted_tls_fragment(2)
             data: TLSCiphertext = intercepted.get_content()
-            # Tampering MAC
+            # Tampering data
             encrypted = bytearray(data.get_data())
             encrypted[10] ^= 0xff
 
             intercepted.set_content(TLSCiphertext(
-                encrypted, data.get_mac()
+                encrypted
             ))
 
             mitm.send_fragment(1, intercepted.encode())

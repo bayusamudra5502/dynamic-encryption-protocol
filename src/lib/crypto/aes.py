@@ -19,6 +19,10 @@ class Cipher(ABC):
     def decrypt(self, data: bytes) -> bytes:
         pass
 
+    @abstractmethod
+    def copy(self) -> 'Cipher':
+        pass
+
 
 class MAC(ABC):
     @abstractmethod
@@ -143,6 +147,8 @@ class DynamicAES(DynamicState, Cipher):
 
                 res = xor(ciphertext, stream_key)
                 plaintext.extend(res)
+
+            return unpad(bytes(plaintext), 16)
         except Exception as e:
             # Rollback
             self._current_key = start_state
@@ -150,7 +156,12 @@ class DynamicAES(DynamicState, Cipher):
             self.__ctr = start_ctr
             raise e
 
-        return unpad(bytes(plaintext), 16)
+    def copy(self) -> 'DynamicAES':
+        result = DynamicAES(None, self.__ctr, block_size=self.__block_size)
+        result._current_key = self._current_key
+        result._next_chaos = self._next_chaos
+
+        return result
 
 
 class DynamicAESCBC(DynamicState, Cipher):
@@ -224,6 +235,14 @@ class DynamicAESCBC(DynamicState, Cipher):
             raise e
 
         return unpad(bytes(plaintext), 16)
+
+    def copy(self) -> 'DynamicAESCBC':
+        result = DynamicAESCBC(None, self.__last_block,
+                               block_size=self.__block_size)
+        result._current_key = self._current_key
+        result._next_chaos = self._next_chaos
+
+        return result
 
 
 class DynamicHMAC(DynamicState, MAC):
