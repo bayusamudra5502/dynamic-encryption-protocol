@@ -205,12 +205,13 @@ def test_tc_2_5():
 
     p = multiprocessing.Process(target=start_server)
     p.start()
+    semaphore.acquire()
 
     try:
         TLSConnection(SocketClient(socket_path),
                       certificates=[cert], is_server=False)
         assert False
     except Exception as e:
-        pass
+        assert e.args[0] == "Handshake failed"
 
     p.terminate()

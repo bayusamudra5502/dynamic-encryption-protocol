@@ -17,6 +17,8 @@ from lib.crypto.key import generate_finished_payload
 from lib.data.alert import Alert, AlertLevel, AlertDescription
 from secrets import compare_digest
 from secrets import randbits
+from cryptography.x509 import Certificate as CryptographyCertificate
+
 
 from cryptography.hazmat.primitives.asymmetric import ec
 
@@ -85,7 +87,11 @@ class ClientHandshake(TLSHandshake):
     _master_secret = None
     _change_cipher_spec = False
 
-    def __init__(self, version: ProtocolVersion, transport: Transport, *,
+    _error_sent = False
+
+    def __init__(self, version: ProtocolVersion,
+                 transport: Transport,
+                 server_certificate: list[CryptographyCertificate] = None, *,
                  # Testing purposes only
                  tls_client_hello: Handshake = None,
                  tls_server_hello: Handshake = None,
@@ -108,6 +114,7 @@ class ClientHandshake(TLSHandshake):
         self._client_key_exchange = tls_client_key_exchange
         self._client_finished = tls_client_finished
         self._server_finished = tls_server_finished
+        self._pinned_server_certificate = server_certificate
 
     class Phase:
         CLIENT_HELLO = 0
@@ -131,15 +138,18 @@ class ClientHandshake(TLSHandshake):
             elif self._phase == ClientHandshake.Phase.FINISHED:
                 self.finished()
             elif self._phase == ClientHandshake.Phase.FAILED:
-                data = TLSRecordLayer(
-                    self._version,
-                    ContentType.ALERT,
-                    Alert(
-                        alert_type=AlertLevel.FATAL,
-                        alert_description=AlertDescription.HANDSHAKE_FAILURE
+                if not self._error_sent:
+                    data = TLSRecordLayer(
+                        self._version,
+                        ContentType.ALERT,
+                        Alert(
+                            alert_type=AlertLevel.FATAL,
+                            alert_description=AlertDescription.HANDSHAKE_FAILURE
+                        )
                     )
-                )
-                self._transport.send(data.encode())
+                    self._transport.send(data.encode())
+                    self._error_sent = True
+
                 raise Exception("Handshake failed")
 
     def client_hello(self) -> None:
@@ -179,7 +189,7 @@ class ClientHandshake(TLSHandshake):
 
         # Verify Certificate
         if self._server_certificate is None:
-            # TODO: send alert
+            self._error_sent = True
             data = TLSRecordLayer(
                 self._version,
                 ContentType.ALERT,
@@ -191,6 +201,21 @@ class ClientHandshake(TLSHandshake):
             self._transport.send(data.encode())
             self._phase = ClientHandshake.Phase.FAILED
             raise Exception("Server Certificate is required")
+
+        certificates = self._server_certificate.get_payload().get_certificates()
+        if self._pinned_server_certificate != certificates:
+            self._error_sent = True
+            self._phase = ClientHandshake.Phase.FAILED
+            data = TLSRecordLayer(
+                self._version,
+                ContentType.ALERT,
+                Alert(
+                    alert_type=AlertLevel.FATAL,
+                    alert_description=AlertDescription.CERTIFICATE_UNKNOWN
+                )
+            )
+            self._transport.send(data.encode())
+            return
 
         try:
             if not self.__verify():

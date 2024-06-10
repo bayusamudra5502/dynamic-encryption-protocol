@@ -50,7 +50,7 @@ class TLSConnection(Transport):
     def handshake(self, is_server) -> None:
         if not is_server:
             handshake: TLSHandshake = ClientHandshake(
-                self.__version, self.__transport)
+                self.__version, self.__transport, self.__certificates)
         else:
             handshake: TLSHandshake = ServerHandshake(
                 self.__version, self.__transport, self.__certificates, self.__private_key)

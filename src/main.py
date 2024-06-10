@@ -25,7 +25,7 @@ parser.add_argument(
 parser.add_argument(
     '--port', '-p', help="Port to bind or connect", required=True)
 parser.add_argument(
-    "--cert", "-c", help="Certificate file (Server only)")
+    "--cert", "-c", help="Certificate file", required=True)
 parser.add_argument(
     "--key", "-k", help="Private key file (Server only)")
 parser.add_argument(
@@ -40,15 +40,15 @@ port = args['port']
 folder = args['folder']
 
 if mode == 'server':
-    cert_path = args['cert']
     key_path = args['key']
-
-    if not os.path.exists(cert_path):
-        print(f"Certificate file {cert_path} not found")
-        exit(1)
 
     if not os.path.exists(key_path):
         print(f"Private key file {key_path} not found")
+        exit(1)
+
+    cert_path = args['cert']
+    if not os.path.exists(cert_path):
+        print(f"Certificate file {cert_path} not found")
         exit(1)
 
     with open(cert_path, 'rb') as f:
@@ -121,8 +121,16 @@ def server(listen_addr: str, port: int, folder: str = "."):
 
 
 def client(target_addr: str, port: int, folder="."):
+    cert_path = args['cert']
+    if not os.path.exists(cert_path):
+        print(f"Certificate file {cert_path} not found")
+        exit(1)
+
+    with open(cert_path, 'rb') as f:
+        cert = load_pem_x509_certificate(f.read())
+
     transport = TCPClient(target_addr, port)
-    conn = TLSConnection(transport)
+    conn = TLSConnection(transport, certificates=[cert])
 
     print(f"Session id: {conn.get_session_id()}")
 

@@ -41,9 +41,11 @@ def generate_certificate_and_key():
 
 
 def test_client_hello():
+    cert, key = generate_certificate_and_key()
+
     memory = MemoryTransport()
-    client = ClientHandshake(VERSION_TLS_12, memory)
-    client2 = ClientHandshake(VERSION_TLS_12, memory)
+    client = ClientHandshake(VERSION_TLS_12, memory, [cert])
+    client2 = ClientHandshake(VERSION_TLS_12, memory, [cert])
 
     assert client._phase == None
 
@@ -60,7 +62,7 @@ def test_server_hello():
     cert, key = generate_certificate_and_key()
 
     memory = MemoryTransport()
-    client = ClientHandshake(VERSION_TLS_12, memory)
+    client = ClientHandshake(VERSION_TLS_12, memory, [cert])
     server = ServerHandshake(VERSION_TLS_12, memory, [cert], key)
 
     client.client_hello()
@@ -108,7 +110,7 @@ def test_client_server_hello_exchange():
     cert, key = generate_certificate_and_key()
 
     memory = MemoryTransport()
-    client = ClientHandshake(VERSION_TLS_12, memory)
+    client = ClientHandshake(VERSION_TLS_12, memory, [cert])
     server = ServerHandshake(VERSION_TLS_12, memory, [cert], key)
 
     client.client_hello()
@@ -124,15 +126,42 @@ def test_client_server_hello_exchange():
     assert client._phase == ClientHandshake.Phase.KEY_EXCHANGE
 
 
-def test_client_server_hello_with_bad_cert():
+def test_client_server_hello_with_bad_key():
     cert, key = generate_certificate_and_key()
     _, key_bad = generate_certificate_and_key()
 
     assert key != key_bad
 
     memory = MemoryTransport()
-    client = ClientHandshake(VERSION_TLS_12, memory)
+    client = ClientHandshake(VERSION_TLS_12, memory, [cert])
     server = ServerHandshake(VERSION_TLS_12, memory, [cert], key_bad)
+
+    client.client_hello()
+    server.client_hello()
+    server.server_hello()
+    client.server_hello()
+
+    assert client._phase == ClientHandshake.Phase.FAILED
+
+    is_exception = False
+    try:
+        client.run()
+    except Exception:
+        is_exception = True
+
+    if not is_exception:
+        raise Exception("Should throw an exception")
+
+
+def test_client_server_hello_with_bad_cert():
+    cert, key = generate_certificate_and_key()
+    bad_cert, key_bad = generate_certificate_and_key()
+
+    assert key != key_bad
+
+    memory = MemoryTransport()
+    client = ClientHandshake(VERSION_TLS_12, memory, [cert])
+    server = ServerHandshake(VERSION_TLS_12, memory, [bad_cert], key_bad)
 
     client.client_hello()
     server.client_hello()
@@ -155,7 +184,7 @@ def test_client_key_exchange():
     cert, key = generate_certificate_and_key()
 
     memory = MemoryTransport()
-    client = ClientHandshake(VERSION_TLS_12, memory)
+    client = ClientHandshake(VERSION_TLS_12, memory, [cert])
     server = ServerHandshake(VERSION_TLS_12, memory, [cert], key)
 
     client.client_hello()
@@ -204,7 +233,7 @@ def test_server_finished():
     cert, key = generate_certificate_and_key()
 
     memory = MemoryTransport()
-    client = ClientHandshake(VERSION_TLS_12, memory)
+    client = ClientHandshake(VERSION_TLS_12, memory, [cert])
     server = ServerHandshake(VERSION_TLS_12, memory, [cert], key)
 
     client.client_hello()
@@ -234,7 +263,7 @@ def test_client_finished():
     cert, key = generate_certificate_and_key()
 
     memory = MemoryTransport()
-    client = ClientHandshake(VERSION_TLS_12, memory)
+    client = ClientHandshake(VERSION_TLS_12, memory, [cert])
     server = ServerHandshake(VERSION_TLS_12, memory, [cert], key)
 
     client.client_hello()
@@ -293,7 +322,7 @@ def test_handshake_integration():
 
     semaphore.acquire()
 
-    client = ClientHandshake(VERSION_TLS_12, SocketClient(socket_path))
+    client = ClientHandshake(VERSION_TLS_12, SocketClient(socket_path), [cert])
     client.run()
     client_res = client.get_tls_application_record()
     server_res = server_res.get()
