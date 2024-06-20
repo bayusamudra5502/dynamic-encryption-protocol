@@ -32,7 +32,11 @@ class TLSConnection(Transport):
         if tls_handler is None:
             self.__state = ConnectionState.HANDSHAKE
             if not manual_handshake:
-                self.handshake(self.__is_server)
+                try:
+                    self.handshake(self.__is_server)
+                except Exception as err:
+                    self.__closed_by_peer = True
+                    raise err
         else:
             self.__state: ConnectionState = ConnectionState.ESTABLISHED
             self.__tls_app_handler = tls_handler

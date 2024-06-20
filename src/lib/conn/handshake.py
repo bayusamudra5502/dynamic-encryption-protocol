@@ -150,6 +150,7 @@ class ClientHandshake(TLSHandshake):
                     self._transport.send(data.encode())
                     self._error_sent = True
 
+                self._transport.close()
                 raise Exception("Handshake failed")
 
     def client_hello(self) -> None:
@@ -452,6 +453,8 @@ class ServerHandshake(TLSHandshake):
                     )
                 )
                 self._transport.send(data.encode())
+                self._transport.close()
+
                 raise Exception("Handshake failed")
 
     def client_hello(self) -> None:
