@@ -230,6 +230,7 @@ class ClientHandshake(TLSHandshake):
                     )
                 )
                 self._transport.send(data.encode())
+                self._error_sent = True
                 return
         except Exception as e:
             self._phase = ClientHandshake.Phase.FAILED
@@ -352,7 +353,12 @@ class ClientHandshake(TLSHandshake):
         server_cert_pk = certificates[0].public_key()
         server_exchange: ServerKeyExchange = self._server_key_exchange.get_payload()
 
-        return verify(server_exchange.get_params().encode(),
+        client_hello: ClientHello = self._client_hello.get_payload()
+        server_hello: ServerHello = self._server_hello.get_payload()
+
+        return verify(client_hello.get_random().encode() +
+                      server_hello.get_random().encode() +
+                      server_exchange.get_params().encode(),
                       server_exchange.get_signature().get_signature(), server_cert_pk)
 
     def get_tls_application_record(self) -> TLSApplicationRecordHandler:
@@ -458,20 +464,23 @@ class ServerHandshake(TLSHandshake):
         self._phase = ClientHandshake.Phase.SERVER_HELLO
 
     def server_hello(self) -> None:
-        server_hello = TLSRecordLayer(
+        server_hello = ServerHello(
+            self._version,
+            Random(),
+            randbits(32 * 8),
+            CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_256_CHAOS_SHA256,
+            CompressionMethod.NULL,
+        )
+        server_hello_frame = TLSRecordLayer(
             self._version,
             ContentType.HANDSHAKE,
             Handshake(
                 HandshakeType.SERVER_HELLO,
-                ServerHello(
-                    self._version,
-                    Random(),
-                    randbits(32 * 8),
-                    CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_256_CHAOS_SHA256,
-                    CompressionMethod.NULL,
-                )
+                server_hello
             )
         )
+
+        client_hello: ClientHello = self._client_hello.get_payload()
 
         self.__private = ec.generate_private_key(ec.SECP256R1())
         public = self.__private.public_key().public_numbers()
@@ -480,7 +489,8 @@ class ServerHandshake(TLSHandshake):
             ECParameter(),
             point,
         )
-        signature = sign(param.encode(), self._certificate_private_key)
+        signature = sign(client_hello.get_random().encode(
+        ) + server_hello.get_random().encode() + param.encode(), self._certificate_private_key)
 
         server_key_exchange = TLSRecordLayer(
             self._version,
@@ -513,10 +523,10 @@ class ServerHandshake(TLSHandshake):
         )
 
         # TODO: Send Certificate
-        self._transport.send(server_hello.encode(
+        self._transport.send(server_hello_frame.encode(
         ) + server_key_exchange.encode() + certificate.encode() + server_hello_end.encode())
 
-        self._server_hello = server_hello.get_content()
+        self._server_hello = server_hello_frame.get_content()
         self._server_key_exchange = server_key_exchange.get_content()
         self._server_certificate = certificate.get_content()
         self._server_hello_done = server_hello_end.get_content()

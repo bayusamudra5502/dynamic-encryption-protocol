@@ -75,11 +75,7 @@ def test_tc_2_11():
             mitm.continue_fragment(2, 1)
             mitm.continue_fragment(2, 1)
 
-            mitm.continue_fragment(1, 2)
-            mitm.continue_fragment(1, 2)
-            mitm.continue_fragment(1, 2)
-
-            result = mitm.get_intercepted_tls_fragment(2)
+            result = mitm.get_intercepted_tls_fragment(1)
             mitm_controller_queue.put(result)
             mitm.send_fragment(1, result.encode())
         finally:

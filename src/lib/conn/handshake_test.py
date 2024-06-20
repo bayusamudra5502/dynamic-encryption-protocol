@@ -70,6 +70,7 @@ def test_server_hello():
 
     assert isinstance(server._client_hello, Handshake)
     assert isinstance(server._client_hello.get_payload(), ClientHello)
+    client_hello: ClientHello = server._client_hello.get_payload()
 
     server.server_hello()
 
@@ -79,6 +80,7 @@ def test_server_hello():
     assert record.get_type() == HandshakeType.SERVER_HELLO
     assert record.length() == 74
     assert isinstance(server._server_hello.get_payload(), ServerHello)
+    server_hello: ServerHello = server._server_hello.get_payload()
 
     record = client._get_handshake()
 
@@ -90,7 +92,7 @@ def test_server_hello():
     key_ex = record.get_payload()
     sign = key_ex.get_signature()
     key.public_key().verify(sign.get_signature(),
-                            key_ex.get_params().encode(), ec.ECDSA(hashes.SHA256()))
+                            client_hello.get_random().encode() + server_hello.get_random().encode() + key_ex.get_params().encode(), ec.ECDSA(hashes.SHA256()))
 
     record = client._get_handshake()
 
