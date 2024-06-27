@@ -245,6 +245,75 @@ class DynamicAESCBC(DynamicState, Cipher):
         return result
 
 
+class DynamicAESEBC(DynamicState, Cipher):
+    __block_size: bytes
+
+    def __init__(self, chaos, *, block_size: int = 16) -> None:
+        super().__init__(chaos)
+
+        if block_size % 16 != 0:
+            raise Exception("block size must be multiply of 16")
+
+        self.__block_size = block_size
+
+    def encrypt(self, data: bytes):
+        data = pad(data, 16)
+        cipertext = bytearray()
+
+        start_state, start_next_chaos = self._get_state()
+
+        try:
+            for i in range(0, len(data), self.__block_size):
+                key = self._get_current_key()
+                self.rotate()
+
+                plaintext = data[i:i+self.__block_size]
+
+                aes = AES.new(key, AES.MODE_ECB)
+                encrypted = aes.encrypt(plaintext)
+
+                cipertext.extend(encrypted)
+        except Exception as e:
+            # Rollback
+            self._current_key = start_state
+            self._next_chaos = start_next_chaos
+            raise e
+
+        return bytes(cipertext)
+
+    def decrypt(self, data: bytes):
+        plaintext = []
+
+        start_state, start_next_chaos = self._get_state()
+
+        try:
+            for i in range(0, len(data), self.__block_size):
+                key = self._get_current_key()
+                self.rotate()
+
+                block_data = data[i:i+self.__block_size]
+                ciphertext = block_data
+
+                aes = AES.new(key, AES.MODE_ECB)
+                decrypted = aes.decrypt(ciphertext)
+
+                plaintext.extend(decrypted)
+        except Exception as e:
+            # Rollback
+            self._current_key = start_state
+            self._next_chaos = start_next_chaos
+            raise e
+
+        return unpad(bytes(plaintext), 16)
+
+    def copy(self) -> 'DynamicAESCBC':
+        result = DynamicAESCBC(None, block_size=self.__block_size)
+        result._current_key = self._current_key
+        result._next_chaos = self._next_chaos
+
+        return result
+
+
 class DynamicHMAC(DynamicState, MAC):
     def __init__(self, chaos) -> None:
         super().__init__(chaos)

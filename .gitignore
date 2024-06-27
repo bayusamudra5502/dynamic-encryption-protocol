@@ -3,3 +3,5 @@ __pycache__
 server
 client
 *.dat
+*.csv
+!src/notebook/*.csv
